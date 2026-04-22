@@ -25,4 +25,6 @@ COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/migrations ./packages/db/migrations
 COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 EXPOSE 3001
-CMD ["node", "apps/api/dist/server.js"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+CMD ["sh", "-c", "node packages/db/dist/migrate.js && node apps/api/dist/server.js"]
