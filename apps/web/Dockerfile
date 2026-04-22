@@ -9,7 +9,9 @@ RUN npm ci --workspace=@piglog/web --workspace=@piglog/db --workspace=@piglog/co
 COPY . .
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
-RUN npm run build --workspace=@piglog/web
+RUN npm run build --workspace=@piglog/contracts && \
+    npm run build --workspace=@piglog/db && \
+    npm run build --workspace=@piglog/web
 
 # Production stage — static SPA served by nginx
 FROM nginx:alpine AS runner
