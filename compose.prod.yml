@@ -5,6 +5,8 @@ networks:
 volumes:
   timescale_prod_data:
   redis_prod_data:
+  caddy_data:
+  caddy_config:
 
 services:
   timescaledb:
@@ -21,7 +23,7 @@ services:
     volumes:
       - timescale_prod_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-piglog} -d ${DB_NAME:-piglog_prod}"]
       interval: 10s
@@ -49,9 +51,9 @@ services:
     volumes:
       - redis_prod_data:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,6 +68,27 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: piglog-migrate-prod
+    restart: "no"
+    networks:
+      - piglog-prod
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-piglog}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME:-piglog_prod}
+    command: ["node", "packages/db/dist/migrate.js"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
   api:
     build:
       context: .
@@ -79,8 +102,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER:-piglog}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME:-piglog_prod}
@@ -112,7 +137,7 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: piglog-worker-prod
     restart: always
-    command: ["npm", "run", "start:worker", "--workspace=@piglog/api"]
+    command: ["node", "apps/api/dist/workers/index.js"]
     networks:
       - piglog-prod
     depends_on:
@@ -120,6 +145,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER:-piglog}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME:-piglog_prod}
@@ -140,6 +167,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     container_name: piglog-web-prod
     restart: always
     networks:
@@ -147,13 +176,13 @@ services:
     depends_on:
       - api
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -169,3 +198,22 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
+
+  # Optional reverse proxy — bind to host ports 80/443
+  # Replace APP_URL/API_URL with your real domain before enabling
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: piglog-caddy-prod
+  #   restart: always
+  #   networks:
+  #     - piglog-prod
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./ops/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     - web
+  #     - api

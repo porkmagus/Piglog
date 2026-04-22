@@ -9,7 +9,7 @@ import { createSource, listSources, getSource, regenerateApiKey, deleteSource } 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.enum(['http', 'syslog', 'filebeat', 'vector']),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 export default async function sourceRoutes(app: FastifyInstance) {

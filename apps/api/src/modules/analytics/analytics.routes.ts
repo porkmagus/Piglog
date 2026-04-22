@@ -22,7 +22,7 @@ export default async function analyticsRoutes(app: FastifyInstance) {
         count(*)::int AS count
       FROM ${logEntry}
       WHERE ${logEntry.workspaceId} = ${workspaceId}
-        AND ${logEntry.timestamp} >= ${from}
+        AND ${logEntry.timestamp} >= ${from.toISOString()}
       GROUP BY bucket
       ORDER BY bucket ASC
     `);
@@ -81,7 +81,7 @@ export default async function analyticsRoutes(app: FastifyInstance) {
       ));
 
     return {
-      volume: volume.rows || [],
+      volume: volume || [],
       levels,
       services,
       hosts,

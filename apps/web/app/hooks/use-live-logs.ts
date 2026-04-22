@@ -80,7 +80,7 @@ export function useLiveLogs({ workspaceId, sourceId, service, level, enabled = f
       eventSourceRef.current = null;
       setConnected(false);
     };
-  }, [enabled, workspaceId, sourceId, service, level, paused]);
+  }, [enabled, workspaceId, sourceId, service, level]);
 
   return { logs, connected, paused, setPaused, clearLogs };
 }

@@ -21,6 +21,7 @@ async function start() {
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       },
       bodyLimit: 10 * 1024 * 1024, // 10MB for log ingestion
+      trustProxy: true,
     });
 
     await server.register(app);

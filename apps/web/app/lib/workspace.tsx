@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { fetchApi } from './api';
 
 interface Workspace {
@@ -13,6 +13,7 @@ interface WorkspaceContextType {
   activeWorkspace: Workspace | null;
   setActiveWorkspace: (w: Workspace) => void;
   isLoading: boolean;
+  refreshWorkspaces: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -22,24 +23,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await fetchApi('/workspaces');
-        setWorkspaces(data);
-        if (data.length > 0) {
-          const saved = localStorage.getItem('piglog:activeWorkspace');
-          const match = saved ? data.find((w: Workspace) => w.id === saved) : null;
-          setActiveWorkspace(match || data[0]);
+  const refreshWorkspaces = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchApi('/workspaces');
+      setWorkspaces(data);
+      if (data.length > 0) {
+        const saved = localStorage.getItem('piglog:activeWorkspace');
+        const match = saved ? data.find((w: Workspace) => w.id === saved) : null;
+        if (saved && !match) {
+          localStorage.removeItem('piglog:activeWorkspace');
         }
-      } catch (err) {
-        console.error('Failed to load workspaces:', err);
-      } finally {
-        setIsLoading(false);
+        setActiveWorkspace(match || data[0]);
+      } else {
+        localStorage.removeItem('piglog:activeWorkspace');
+        setActiveWorkspace(null);
       }
+    } catch (err) {
+      console.error('Failed to load workspaces:', err);
+    } finally {
+      setIsLoading(false);
     }
-    load();
   }, []);
+
+  useEffect(() => {
+    refreshWorkspaces();
+  }, [refreshWorkspaces]);
 
   function handleSetActive(w: Workspace) {
     setActiveWorkspace(w);
@@ -48,7 +57,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider
-      value={{ workspaces, activeWorkspace, setActiveWorkspace: handleSetActive, isLoading }}
+      value={{ workspaces, activeWorkspace, setActiveWorkspace: handleSetActive, isLoading, refreshWorkspaces }}
     >
       {children}
     </WorkspaceContext.Provider>

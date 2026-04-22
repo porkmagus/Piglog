@@ -11,7 +11,7 @@ if (!connectionString) {
 }
 
 async function migrate() {
-  const sql = postgres(connectionString!, { max: 1 });
+  const sql = postgres(connectionString, { max: 1 });
 
   const migrationPath = resolve(__dirname, '../migrations/0000_initial.sql');
   const migrationSql = readFileSync(migrationPath, 'utf-8');

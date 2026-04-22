@@ -4,7 +4,7 @@ import { db, logEntry, alertRule, alertRuleStatusEnum } from '@piglog/db';
 import { redisConnection, webhookNotifyQueue } from '../queues/index.js';
 
 const alertWorker = new Worker(
-  'alert:evaluate',
+  'alert-evaluate',
   async (job) => {
     const { workspaceId, service, level, windowMinutes = 5, ruleId } = job.data;
 

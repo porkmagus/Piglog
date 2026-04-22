@@ -15,5 +15,10 @@ export async function fetchApi(path: string, options?: RequestInit) {
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
+  const contentType = response.headers.get('content-type');
+  if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+    return undefined;
+  }
+
   return response.json();
 }

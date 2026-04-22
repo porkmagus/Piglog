@@ -9,6 +9,14 @@ declare module 'fastify' {
   interface FastifyInstance {
     auth: ReturnType<typeof betterAuth>;
   }
+  interface FastifyRequest {
+    user?: {
+      id: string;
+      email: string;
+      name: string | null;
+      image: string | null;
+    };
+  }
 }
 
 export interface AuthenticatedRequest extends FastifyRequest {
@@ -53,6 +61,50 @@ export const authPlugin = fp(async (fastify: FastifyInstance) => {
   });
 
   fastify.decorate('auth', auth as FastifyInstance['auth']);
+
+  // Wire up Better Auth HTTP handler to Fastify routes
+  fastify.register(async (authRoutes) => {
+    authRoutes.all('/*', async (request: FastifyRequest, reply: FastifyReply) => {
+      const protocol = request.protocol || 'http';
+      const host = request.hostname || 'localhost';
+      const url = new URL(request.raw.url || '/', `${protocol}://${host}`);
+
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(request.headers)) {
+        if (value !== undefined) {
+          headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+        }
+      }
+
+      let body: string | undefined;
+      if (request.body && ['POST', 'PUT', 'PATCH'].includes(request.method)) {
+        if (typeof request.body === 'string') {
+          body = request.body;
+        } else {
+          body = JSON.stringify(request.body);
+          if (!headers.has('content-type')) {
+            headers.set('content-type', 'application/json');
+          }
+        }
+      }
+
+      const req = new Request(url.toString(), {
+        method: request.method,
+        headers,
+        body,
+      });
+
+      const response = await auth.handler(req);
+
+      reply.status(response.status);
+      for (const [key, value] of response.headers) {
+        void reply.header(key, value);
+      }
+
+      const responseBody = await response.text();
+      return reply.send(responseBody);
+    });
+  }, { prefix: '/auth' });
 });
 
 export async function requireAuth(request: AuthenticatedRequest, reply: FastifyReply) {

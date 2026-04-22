@@ -52,9 +52,13 @@ export async function app(fastify: FastifyInstance) {
   await fastify.register(async function protectedRoutes(app) {
     app.addHook('onRequest', async (request: AuthenticatedRequest, _reply) => {
       try {
-        const session = await app.auth.api.getSession({
-          headers: request.headers,
-        });
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(request.headers)) {
+          if (value !== undefined) {
+            headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+          }
+        }
+        const session = await app.auth.api.getSession({ headers });
         if (session?.user) {
           request.user = {
             id: session.user.id,

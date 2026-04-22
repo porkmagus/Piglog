@@ -30,7 +30,7 @@ export default function AppLayout() {
                 className="w-4 h-4 rounded-sm flex-shrink-0"
                 style={{ backgroundColor: activeWorkspace?.color || '#5E6AD2' }}
               />
-              <span className="truncate font-medium">{activeWorkspace?.name || 'Loading...'}</span>
+              <span className="truncate font-medium">{activeWorkspace?.name || 'No workspace'}</span>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[#8A8F98] flex-shrink-0" />
           </button>

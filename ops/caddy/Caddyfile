@@ -1,0 +1,10 @@
+# Piglog Production Caddyfile
+# Replace piglog.dev and api.piglog.dev with your actual domains
+
+piglog.dev {
+	reverse_proxy web:3000
+}
+
+api.piglog.dev {
+	reverse_proxy api:3001
+}

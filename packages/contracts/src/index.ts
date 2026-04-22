@@ -9,7 +9,7 @@ export const ingestLogSchema = z.object({
   service: z.string().min(1).max(255),
   host: z.string().max(255).optional(),
   message: z.string().min(1),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   traceId: z.string().max(255).optional(),
 });
 

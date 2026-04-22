@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await authClient.signOut();
     setUser(null);
+    localStorage.removeItem('piglog:activeWorkspace');
   }
 
   return (

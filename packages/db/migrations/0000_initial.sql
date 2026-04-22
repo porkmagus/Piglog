@@ -1,4 +1,9 @@
 -- ============================================================
+-- Extensions
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+-- ============================================================
 -- Enums
 -- ============================================================
 DO $$ BEGIN
@@ -302,7 +307,7 @@ CREATE INDEX IF NOT EXISTS "log_stream_workspace_idx" ON "log_stream"("workspace
 CREATE INDEX IF NOT EXISTS "log_stream_source_idx" ON "log_stream"("source_id");
 
 CREATE TABLE IF NOT EXISTS "log_entry" (
-  "id" bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  "id" bigint GENERATED ALWAYS AS IDENTITY,
   "timestamp" timestamptz NOT NULL,
   "workspace_id" text NOT NULL REFERENCES "workspace"("id") ON DELETE CASCADE,
   "source_id" text NOT NULL REFERENCES "log_source"("id") ON DELETE CASCADE,
@@ -311,7 +316,8 @@ CREATE TABLE IF NOT EXISTS "log_entry" (
   "host" text,
   "message" text NOT NULL,
   "metadata" jsonb,
-  "trace_id" text
+  "trace_id" text,
+  PRIMARY KEY ("id", "timestamp")
 );
 CREATE INDEX IF NOT EXISTS "log_entry_timestamp_idx" ON "log_entry"("timestamp");
 CREATE INDEX IF NOT EXISTS "log_entry_workspace_service_level_idx" ON "log_entry"("workspace_id", "service", "level");

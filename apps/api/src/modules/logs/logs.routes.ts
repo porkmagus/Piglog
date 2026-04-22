@@ -14,7 +14,7 @@ const ingestSchema = z.object({
     service: z.string().min(1).max(255),
     host: z.string().max(255).optional(),
     message: z.string().min(1),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
     traceId: z.string().max(255).optional(),
   })),
 });
@@ -87,7 +87,13 @@ export default async function logRoutes(app: FastifyInstance) {
 
   // Protected query endpoint
   app.get('/query', async (request, reply) => {
-    const session = await app.auth.api.getSession({ headers: request.headers });
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(request.headers)) {
+      if (value !== undefined) {
+        headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+      }
+    }
+    const session = await app.auth.api.getSession({ headers });
     if (!session?.user) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }

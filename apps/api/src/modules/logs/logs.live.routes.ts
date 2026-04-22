@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, and, gte } from 'drizzle-orm';
-import { logEntry, logSource } from '@piglog/db';
+import { eq, and, gte, sql } from 'drizzle-orm';
+import { logEntry, logSource, logLevelEnum } from '@piglog/db';
 import { redisConnection } from '../../queues/index.js';
 import { db } from '@piglog/db';
 
@@ -18,7 +18,13 @@ export default async function liveLogRoutes(app: FastifyInstance) {
     }
 
     // Validate API key or session
-    const session = await app.auth.api.getSession({ headers: request.headers });
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(request.headers)) {
+      if (value !== undefined) {
+        headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+      }
+    }
+    const session = await app.auth.api.getSession({ headers });
     if (!session?.user) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
@@ -41,10 +47,10 @@ export default async function liveLogRoutes(app: FastifyInstance) {
           eq(logEntry.workspaceId, workspaceId),
           sourceId ? eq(logEntry.sourceId, sourceId) : undefined,
           service ? eq(logEntry.service, service) : undefined,
-          level ? eq(logEntry.level, level) : undefined
+          level ? eq(logEntry.level, level as (typeof logLevelEnum.enumValues)[number]) : undefined
         )
       )
-      .orderBy(logEntry.timestamp)
+      .orderBy(sql`${logEntry.timestamp} DESC`)
       .limit(50);
 
     for (const log of recent) {

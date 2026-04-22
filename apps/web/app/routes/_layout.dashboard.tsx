@@ -38,7 +38,11 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (activeWorkspace) loadData();
+    if (activeWorkspace) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
   }, [activeWorkspace]);
 
   async function loadData() {
@@ -52,6 +56,22 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!activeWorkspace) {
+    return (
+      <RequireAuth>
+        <div className="flex flex-col items-center justify-center h-full gap-4">
+          <p className="text-sm text-[#8A8F98]">No workspace selected.</p>
+          <button
+            onClick={() => navigate('/onboarding')}
+            className="rounded-md bg-[#5E6AD2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+          >
+            Create a workspace
+          </button>
+        </div>
+      </RequireAuth>
+    );
   }
 
   if (loading) {

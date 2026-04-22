@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '~/lib/auth-client';
+import { useWorkspace } from '~/lib/workspace';
 import { fetchApi } from '~/lib/api';
 
 export default function OnboardingPage() {
   const { user } = useAuth();
+  const { refreshWorkspaces } = useWorkspace();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [workspaceName, setWorkspaceName] = useState('');
@@ -26,6 +28,7 @@ export default function OnboardingPage() {
           slug: workspaceSlug || workspaceName.toLowerCase().replace(/\s+/g, '-'),
         }),
       });
+      await refreshWorkspaces();
       setStep(2);
     } catch (err: any) {
       setError(err.message || 'Failed to create workspace');

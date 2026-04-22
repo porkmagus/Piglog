@@ -96,8 +96,8 @@ export async function getLogMetrics(
       count(*)::int AS count
     FROM ${logEntry}
     WHERE ${logEntry.workspaceId} = ${workspaceId}
-      AND ${logEntry.timestamp} >= ${from}
-      AND ${logEntry.timestamp} <= ${to}
+      AND ${logEntry.timestamp} >= ${from.toISOString()}
+      AND ${logEntry.timestamp} <= ${to.toISOString()}
     GROUP BY bucket, ${logEntry.level}, ${logEntry.service}
     ORDER BY bucket DESC
   `);

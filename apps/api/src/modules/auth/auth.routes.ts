@@ -1,13 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { getConfiguredAuthProviders } from '../../plugins/auth.js';
 
 export default async function authRoutes(app: FastifyInstance) {
   app.get('/providers', async (_request, reply) => {
-    const { github, google } = app.auth.options.socialProviders || {};
+    const providers = getConfiguredAuthProviders();
     return reply.send({
-      social: {
-        github: Boolean(github),
-        google: Boolean(google),
-      },
+      social: providers,
     });
   });
 }
