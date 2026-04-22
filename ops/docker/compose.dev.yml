@@ -1,0 +1,32 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: piglog-timescale-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: piglog
+      POSTGRES_PASSWORD: piglog_dev_password
+      POSTGRES_DB: piglog_dev
+    volumes:
+      - timescale_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U piglog -d piglog_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: piglog-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  timescale_dev_data:
+  redis_dev_data:

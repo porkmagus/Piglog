@@ -1,0 +1,36 @@
+{
+  "name": "piglog",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @piglog/web run dev",
+    "dev:api": "npm --workspace @piglog/api run dev",
+    "dev:worker": "npm --workspace @piglog/api run dev:worker",
+    "dev:infra": "docker compose -f ops/docker/compose.dev.yml --env-file .env.dev up -d",
+    "dev:infra:down": "docker compose -f ops/docker/compose.dev.yml --env-file .env.dev down",
+    "db:generate": "npm --workspace @piglog/db run generate",
+    "db:migrate": "npm --workspace @piglog/db run migrate",
+    "db:studio": "npm --workspace @piglog/db run studio",
+    "build:api": "npm --workspace @piglog/api run build",
+    "build:web": "npm --workspace @piglog/web run build",
+    "build:all": "npm run build:api && npm run build:web",
+    "prod:build": "docker compose -f compose.prod.yml build",
+    "prod:up": "docker compose -f compose.prod.yml --env-file .env.prod up -d",
+    "prod:down": "docker compose -f compose.prod.yml down"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "zod": "4.3.6"
+  }
+}
