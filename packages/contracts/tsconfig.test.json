@@ -4,21 +4,17 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2024"],
-    "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "types": ["node"],
+    "noEmit": true,
     "paths": {
       "@piglog/api/*": ["../../apps/api/src/*"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.spec.ts"]
+  "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

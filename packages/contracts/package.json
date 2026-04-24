@@ -13,12 +13,16 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "^3.2.4",
+    "fastify": "^5.0.0",
+    "@types/node": "^22.0.0"
   }
 }
