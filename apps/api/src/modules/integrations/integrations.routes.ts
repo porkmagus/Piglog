@@ -100,6 +100,7 @@ export default async function integrationRoutes(app: FastifyInstance) {
       const entities = await connector.discoverEntities({}, body.data.secret);
       return { entities };
     } catch (err) {
+      request.server.log.error({ err }, 'Integration discovery failed');
       return reply.status(500).send({ error: err instanceof Error ? err.message : 'Discovery failed' });
     }
   });
