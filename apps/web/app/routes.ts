@@ -8,7 +8,6 @@ export default [
     route("dashboard", "routes/_layout.dashboard.tsx"),
     route("settings", "routes/_layout.settings.tsx", [
       index("routes/_layout.settings._index.tsx"),
-<<<<<<< HEAD
       route("account", "routes/_layout.settings.account.tsx"),
       route("workspace", "routes/_layout.settings.workspace.tsx"),
       route("ingestion", "routes/_layout.settings.ingestion.tsx"),
