@@ -99,6 +99,41 @@ export default function AppLayout() {
             <Radio className="w-4 h-4" />
             Streams
           </Link>
+
+          {/* Ingestion (expandable) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !ingestionExpanded;
+                setIngestionExpanded(next);
+                localStorage.setItem('sidebar-ingestion-expanded', String(next));
+              }}
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-[#8A8F98] hover:bg-[#151515] hover:text-gray-200 transition-colors"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${ingestionExpanded ? '' : '-rotate-90'}`} />
+              Ingestion
+            </button>
+            {ingestionExpanded && (
+              <div className="mt-0.5 ml-4 pl-3 border-l border-[#2A2A2A] space-y-0.5">
+                <Link
+                  to="/settings/sources"
+                  className="flex items-center gap-2 px-2 py-1 rounded-md text-sm text-[#8A8F98] hover:bg-[#151515] hover:text-gray-200 transition-colors"
+                >
+                  <Plug className="w-3.5 h-3.5" />
+                  Sources
+                </Link>
+                <Link
+                  to="/settings/integrations"
+                  className="flex items-center gap-2 px-2 py-1 rounded-md text-sm text-[#8A8F98] hover:bg-[#151515] hover:text-gray-200 transition-colors"
+                >
+                  <Puzzle className="w-3.5 h-3.5" />
+                  Integrations
+                </Link>
+              </div>
+            )}
+          </div>
+
           <Link
             to="/settings"
             className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-[#8A8F98] hover:bg-[#151515] hover:text-gray-200 transition-colors"
