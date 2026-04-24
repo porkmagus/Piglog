@@ -5,7 +5,7 @@ import { getConnector } from './connectors/index.js';
 import { integrationSyncQueue } from '../../queues/index.js';
 import type { CreateIntegrationInput } from './integrations.schemas.js';
 
-const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const SYNC_INTERVAL_MS = 3 * 60 * 1000;
 
 export async function listIntegrations(workspaceId: string) {
   const integrations = await db
