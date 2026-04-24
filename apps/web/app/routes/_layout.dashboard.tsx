@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { activeWorkspace } = useWorkspace();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,11 +49,12 @@ export default function DashboardPage() {
   async function loadData() {
     if (!activeWorkspace) return;
     setLoading(true);
+    setError(null);
     try {
       const result = await fetchApi(`/workspaces/${activeWorkspace.id}/analytics/overview`);
       setData(result);
     } catch (err) {
-      console.error('Failed to load dashboard:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect to the backend');
     } finally {
       setLoading(false);
     }
@@ -79,6 +81,33 @@ export default function DashboardPage() {
       <RequireAuth>
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2A2A2A] border-t-[#5E6AD2]" />
+        </div>
+      </RequireAuth>
+    );
+  }
+
+  if (error) {
+    return (
+      <RequireAuth>
+        <div className="p-6">
+          <h1 className="text-xl font-semibold mb-4">Dashboard</h1>
+          <div className="rounded-lg border border-red-500/30 bg-[#151515] p-8 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={loadData}
+                className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => navigate('/settings/sources')}
+                className="rounded-md border border-[#2A2A2A] px-3 py-2 text-sm font-medium text-gray-200"
+              >
+                Add Source
+              </button>
+            </div>
+          </div>
         </div>
       </RequireAuth>
     );

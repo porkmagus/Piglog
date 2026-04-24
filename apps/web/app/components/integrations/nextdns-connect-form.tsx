@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { useWorkspace } from '~/lib/workspace';
 import { fetchApi } from '~/lib/api';
 
-export function NextDnsConnectForm() {
+export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }) {
   const { activeWorkspace } = useWorkspace();
-  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<Set<string>>(new Set());
 
@@ -19,6 +18,7 @@ export function NextDnsConnectForm() {
 
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const data = await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/discover`, {
@@ -28,8 +28,9 @@ export function NextDnsConnectForm() {
           secret: apiKey,
         }),
       });
-      setProfiles(data.entities);
-      setSelectedProfiles(new Set(data.entities.map((p: { id: string }) => p.id)));
+      const entities = data?.entities || [];
+      setProfiles(entities);
+      setSelectedProfiles(new Set(entities.map((p: { id: string }) => p.id)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Discovery failed');
     } finally {
@@ -38,10 +39,11 @@ export function NextDnsConnectForm() {
   }
 
   async function handleConnect() {
-    if (selectedProfiles.size === 0 || !activeWorkspace) return;
+    if (loading || selectedProfiles.size === 0 || !activeWorkspace) return;
 
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/integrations`, {
@@ -56,7 +58,12 @@ export function NextDnsConnectForm() {
           },
         }),
       });
-      navigate('/settings/integrations');
+      setName('');
+      setApiKey('');
+      setProfiles([]);
+      setSelectedProfiles(new Set());
+      setSuccessMessage('Integration connected. Profiles will start syncing shortly.');
+      onConnected?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed');
     } finally {
@@ -93,6 +100,7 @@ export function NextDnsConnectForm() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleConnect}
             disabled={loading || selectedProfiles.size === 0}
             className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
@@ -100,6 +108,7 @@ export function NextDnsConnectForm() {
             {loading ? 'Connecting...' : `Connect ${selectedProfiles.size} Profile${selectedProfiles.size > 1 ? 's' : ''}`}
           </button>
           <button
+            type="button"
             onClick={() => {
               setProfiles([]);
               setSelectedProfiles(new Set());
@@ -137,6 +146,7 @@ export function NextDnsConnectForm() {
         />
       </div>
       {error && <div className="text-sm text-red-400">{error}</div>}
+      {successMessage && <div className="text-sm text-green-400">{successMessage}</div>}
       <button
         type="submit"
         disabled={loading}

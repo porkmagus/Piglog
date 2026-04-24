@@ -49,7 +49,7 @@ export default function SourcesPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApi(`/workspaces/${activeWorkspace.id}/sources`);
+      const data = (await fetchApi(`/workspaces/${activeWorkspace.id}/sources`)) || [];
       setSources(data);
     } catch (err) {
       setSources([]);

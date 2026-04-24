@@ -32,7 +32,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; co
   DISABLED: { label: 'Disabled', icon: Pause, color: 'text-[#8A8F98]' },
 };
 
-export function IntegrationList() {
+export function IntegrationList({ refreshKey = 0 }: { refreshKey?: number }) {
   const { activeWorkspace } = useWorkspace();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,7 @@ export function IntegrationList() {
 
   useEffect(() => {
     if (activeWorkspace) loadIntegrations();
-  }, [activeWorkspace]);
+  }, [activeWorkspace, refreshKey]);
 
   async function loadIntegrations() {
     if (!activeWorkspace) return;

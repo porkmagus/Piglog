@@ -29,7 +29,7 @@ export async function fetchApi(path: string, options?: RequestInit) {
 
   const contentType = response.headers.get('content-type');
   if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
-    return undefined;
+    return null;
   }
 
   return response.json();

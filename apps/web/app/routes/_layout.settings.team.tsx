@@ -29,6 +29,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('MEMBER');
@@ -75,8 +76,8 @@ export default function TeamPage() {
       setInviteEmail('');
       setShowInviteForm(false);
       loadInvites();
-    } catch (err: any) {
-      alert(err?.message || 'Failed to send invitation');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send invitation');
     }
   }
 
@@ -86,8 +87,8 @@ export default function TeamPage() {
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/invitations/${id}`, { method: 'DELETE' });
       loadInvites();
-    } catch {
-      alert('Failed to cancel invitation');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel invitation');
     }
   }
 
@@ -127,6 +128,7 @@ export default function TeamPage() {
   return (
     <RequireAuth>
       <div>
+        {error && <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">{error}</div>}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-lg font-semibold">Team</h1>

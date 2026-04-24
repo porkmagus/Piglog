@@ -30,7 +30,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const refreshWorkspaces = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await fetchApi('/workspaces');
+      const data = (await fetchApi('/workspaces')) || [];
       setWorkspaces(data);
       if (data.length > 0) {
         const saved = localStorage.getItem('piglog:activeWorkspace');

@@ -1,27 +1,32 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { RequireAuth } from '~/lib/auth-client';
 import { useWorkspace } from '~/lib/workspace';
 import { fetchApi } from '~/lib/api';
-import { Settings, Trash2, Save } from 'lucide-react';
+import { Trash2, Save } from 'lucide-react';
 
 export default function WorkspaceSettingsPage() {
   const { activeWorkspace, refreshWorkspaces } = useWorkspace();
+  const navigate = useNavigate();
   const [name, setName] = useState(activeWorkspace?.name || '');
   const [slug, setSlug] = useState(activeWorkspace?.slug || '');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function saveWorkspace(e: React.FormEvent) {
     e.preventDefault();
     if (!activeWorkspace) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name, slug }),
       });
       await refreshWorkspaces();
-    } catch {
-      alert('Failed to update workspace');
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to update workspace');
     } finally {
       setSaving(false);
     }
@@ -29,12 +34,14 @@ export default function WorkspaceSettingsPage() {
 
   async function deleteWorkspace() {
     if (!activeWorkspace) return;
-    if (!confirm('Are you sure you want to delete this workspace? This action cannot be undone.')) return;
+    if (!confirm(`Delete "${activeWorkspace.name}"? This will permanently remove all logs, sources, and settings.`)) return;
+    setDeleteError(null);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}`, { method: 'DELETE' });
       await refreshWorkspaces();
-    } catch {
-      alert('Failed to delete workspace');
+      navigate('/onboarding');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete workspace');
     }
   }
 
@@ -66,6 +73,7 @@ export default function WorkspaceSettingsPage() {
             />
             <p className="text-xs text-[#8A8F98] mt-1">Used in URLs and API requests.</p>
           </div>
+          {saveError && <div className="text-sm text-red-400">{saveError}</div>}
           <div className="flex items-center gap-3">
             <button
               type="submit"
@@ -83,6 +91,7 @@ export default function WorkspaceSettingsPage() {
           <p className="text-sm text-[#8A8F98] mb-3">
             Deleting a workspace will permanently remove all logs, sources, and settings.
           </p>
+          {deleteError && <div className="mb-3 text-sm text-red-400">{deleteError}</div>}
           <button
             onClick={deleteWorkspace}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors"

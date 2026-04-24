@@ -26,6 +26,8 @@ export async function app(fastify: FastifyInstance) {
   await fastify.register(cors, {
     origin: trustedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
   });
 
   await fastify.register(rateLimit, {
@@ -33,7 +35,7 @@ export async function app(fastify: FastifyInstance) {
     timeWindow: '1 minute',
     redis: redisConnection,
     keyGenerator: (req) => getGlobalRateLimitKey(req),
-    allowList: (req) => shouldBypassGlobalRateLimit(req),
+    allowList: (req) => req.method === 'OPTIONS' || shouldBypassGlobalRateLimit(req),
   });
 
   await fastify.register(multipart, {

@@ -51,7 +51,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search logs.
           <TokenBadge label={`host:${tokens.host}`} onRemove={() => removeToken('host')} />
         )}
         {tokens.traceId && (
-          <TokenBadge label={`trace:${tokens.traceId.slice(0, 8)}`} onRemove={() => removeToken('traceId')} />
+          <TokenBadge label={`traceId:${tokens.traceId.slice(0, 8)}`} onRemove={() => removeToken('traceId')} />
         )}
 
         <input

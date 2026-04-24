@@ -1,10 +1,12 @@
 import { NavLink, Outlet } from 'react-router';
-import { UserCircle2, Radio, Bell, Users, Settings, Inbox } from 'lucide-react';
+import { UserCircle2, Bell, Users, Settings, Inbox, Plug, Puzzle } from 'lucide-react';
 
 const navItems = [
   { to: '/settings/account', label: 'Account', icon: UserCircle2 },
   { to: '/settings/workspace', label: 'Workspace', icon: Settings },
   { to: '/settings/ingestion', label: 'Ingestion', icon: Inbox },
+  { to: '/settings/sources', label: 'Sources', icon: Plug },
+  { to: '/settings/integrations', label: 'Integrations', icon: Puzzle },
   { to: '/settings/alerts', label: 'Alerts', icon: Bell },
   { to: '/settings/team', label: 'Team', icon: Users },
 ];

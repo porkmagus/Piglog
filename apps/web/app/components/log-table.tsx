@@ -45,6 +45,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
   const { activeWorkspace } = useWorkspace();
   const [historicalLogs, setHistoricalLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [liveMode, setLiveMode] = useState(false);
@@ -75,6 +76,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
   async function loadLogs() {
     if (!activeWorkspace) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const params = new URLSearchParams({
         workspaceId: activeWorkspace.id,
@@ -86,13 +88,13 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
         params.set('to', timeRange.to.toISOString());
       }
 
-      const data = await fetchApi(`/logs/query?${params.toString()}`);
+      const data = (await fetchApi(`/logs/query?${params.toString()}`)) || [];
       setHistoricalLogs(data);
       if (data.length > 0 && selectedIndex === -1) {
         setSelectedIndex(0);
       }
     } catch (err) {
-      console.error('Failed to load logs:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load logs');
       setHistoricalLogs([]);
     } finally {
       setLoading(false);
@@ -188,10 +190,19 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-[#8A8F98]">No logs found.</p>
-          <p className="text-xs text-[#8A8F98] mt-1">
-            {searchQuery ? 'Try adjusting your search.' : 'Configure a source in Settings → Sources to start ingesting.'}
-          </p>
+          {loadError ? (
+            <>
+              <p className="text-sm text-red-400">{loadError}</p>
+              <button onClick={loadLogs} className="mt-2 text-xs text-[#5E6AD2] hover:text-[#4f5ab8]">Retry</button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-[#8A8F98]">No logs found.</p>
+              <p className="text-xs text-[#8A8F98] mt-1">
+                {searchQuery ? 'Try adjusting your search.' : 'Configure a source in Settings → Sources to start ingesting.'}
+              </p>
+            </>
+          )}
         </div>
       </div>
     );

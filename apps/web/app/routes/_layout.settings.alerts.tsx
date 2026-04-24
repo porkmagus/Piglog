@@ -36,6 +36,7 @@ export default function AlertsPage() {
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [events, setEvents] = useState<AlertEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newRule, setNewRule] = useState({
     name: '',
@@ -102,8 +103,8 @@ export default function AlertsPage() {
       });
       setShowCreate(false);
       loadRules();
-    } catch {
-      alert('Failed to create alert rule');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create alert rule');
     }
   }
 
@@ -116,8 +117,8 @@ export default function AlertsPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       loadRules();
-    } catch {
-      alert('Failed to update rule');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update rule');
     }
   }
 
@@ -127,14 +128,15 @@ export default function AlertsPage() {
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/alerts/${id}`, { method: 'DELETE' });
       loadRules();
-    } catch {
-      alert('Failed to delete rule');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete rule');
     }
   }
 
   return (
     <RequireAuth>
       <div>
+        {error && <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">{error}</div>}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-lg font-semibold">Alerts</h1>
