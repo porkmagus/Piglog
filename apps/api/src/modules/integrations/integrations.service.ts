@@ -101,9 +101,6 @@ export async function createIntegrationWithSources(input: CreateIntegrationInput
   /* Run initial sync immediately */
   await integrationSyncQueue.add('sync', { integrationId }, { priority: 10, jobId: `init-sync-${integrationId}` });
 
-  /* Start real-time stream */
-  startStream(integrationId);
-
   const [created] = await db
     .select()
     .from(integration)
@@ -210,6 +207,11 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
         config: cfg,
       })
       .where(eq(integration.id, integrationId));
+
+    /* Start real-time stream after successful sync */
+    if (!anyError) {
+      startStream(integrationId);
+    }
   } catch (err) {
     const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
     (cfg as Record<string, unknown>).errorMessage = err instanceof Error ? err.message : 'Sync failed';
@@ -254,7 +256,6 @@ export async function enableIntegration(integrationId: string): Promise<void> {
     .where(eq(integrationSource.integrationId, integrationId));
 
   /* Re-schedule periodic sync */
-  startStream(integrationId);
   await integrationSyncQueue.add(
     'sync',
     { integrationId },

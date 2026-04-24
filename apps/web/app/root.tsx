@@ -20,6 +20,10 @@ export const links: LinksFunction = () => [
     href: 'https://fonts.gstatic.com',
     crossOrigin: 'anonymous',
   },
+  {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=DotGothic16&display=swap',
+  },
 ];
 
 function CommandPaletteWrapper() {

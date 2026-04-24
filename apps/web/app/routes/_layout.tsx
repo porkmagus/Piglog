@@ -15,7 +15,7 @@ export default function AppLayout() {
       <aside className="w-60 flex-shrink-0 border-r border-[#2A2A2A] bg-[#0D0D0D] flex flex-col">
         <div className="flex items-center gap-2 px-4 h-12 border-b border-[#2A2A2A]">
           <div className="w-5 h-5 rounded bg-[#5E6AD2]" />
-          <span className="font-semibold text-sm">Piglog</span>
+          <span className="text-[#E8E8E8] text-sm" style={{ fontFamily: 'DotGothic16, sans-serif', fontWeight: 400 }}>🐖 Piglog 🐖</span>
         </div>
 
         {/* Workspace Switcher */}

@@ -6,17 +6,72 @@ import { createLogger } from '../../lib/logger.js';
 
 const log = createLogger('stream-manager');
 
+const STREAM_ID_BATCH_INTERVAL_MS = 10_000;
+const STREAM_ID_BATCH_COUNT = 50;
+
 interface ActiveStream {
   connector: IntegrationConnector;
   stop: () => void;
 }
 
-const activeStreams = new Map<string, ActiveStream>();
+interface StreamState {
+  pendingState: Record<string, unknown> | null;
+  eventCount: number;
+  batchTimer: ReturnType<typeof setTimeout> | null;
+}
+
+const activeStreams = new Map<string, { stream: ActiveStream; state: StreamState }>();
+
+function flushStreamState(integrationId: string): void {
+  const entry = activeStreams.get(integrationId);
+  if (!entry) return;
+  const { state } = entry;
+  if (!state.pendingState) return;
+
+  const flush = async () => {
+    const [int] = await db
+      .select()
+      .from(integration)
+      .where(eq(integration.id, integrationId));
+    if (!int) return;
+
+    const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
+    if (!cfg.syncState) (cfg as Record<string, unknown>).syncState = {};
+    const sources = await db
+      .select()
+      .from(integrationSource)
+      .where(eq(integrationSource.integrationId, integrationId));
+    if (sources.length === 0) return;
+
+    (cfg.syncState as Record<string, Record<string, unknown>>)[sources[0].sourceId] = state.pendingState || {};
+    await db
+      .update(integration)
+      .set({ config: cfg, updatedAt: new Date() })
+      .where(eq(integration.id, integrationId));
+  };
+
+  flush().catch((err) => {
+    log.error(`Failed to flush stream state: ${err instanceof Error ? err.message : String(err)}`);
+  });
+
+  state.pendingState = null;
+  state.eventCount = 0;
+  if (state.batchTimer) {
+    clearTimeout(state.batchTimer);
+    state.batchTimer = null;
+  }
+}
 
 export function startStream(integrationId: string): void {
   if (activeStreams.has(integrationId)) {
     stopStream(integrationId);
   }
+
+  const streamState: StreamState = {
+    pendingState: null,
+    eventCount: 0,
+    batchTimer: null,
+  };
 
   const run = async () => {
     const [int] = await db
@@ -57,25 +112,22 @@ export function startStream(integrationId: string): void {
       config: { ...cfg, profileId: source.externalId },
       secret: int.secret || '',
       state: sourceState,
-      onEvent: async (nextState) => {
-        if (!cfg.syncState) (cfg as Record<string, unknown>).syncState = {};
-        (cfg.syncState as Record<string, Record<string, unknown>>)[source.sourceId] = nextState;
-        await db
-          .update(integration)
-          .set({ config: cfg, updatedAt: new Date() })
-          .where(eq(integration.id, integrationId));
-        await db
-          .update(integrationSource)
-          .set({ status: 'CONNECTED' })
-          .where(eq(integrationSource.id, source.id));
+      onEvent: (nextState) => {
+        streamState.pendingState = nextState;
+        streamState.eventCount++;
+
+        if (streamState.eventCount >= STREAM_ID_BATCH_COUNT) {
+          flushStreamState(integrationId);
+        } else if (!streamState.batchTimer) {
+          streamState.batchTimer = setTimeout(() => flushStreamState(integrationId), STREAM_ID_BATCH_INTERVAL_MS);
+        }
       },
       onEnd: () => {
-        log.info(`Stream ended for integration ${integrationId}, restarting...`);
-        startStream(integrationId);
+        log.info(`Stream ended for integration ${integrationId}`);
       },
     });
 
-    activeStreams.set(integrationId, { connector, stop });
+    activeStreams.set(integrationId, { stream: { connector, stop }, state: streamState });
   };
 
   run().catch((err) => {
@@ -85,9 +137,10 @@ export function startStream(integrationId: string): void {
 }
 
 export function stopStream(integrationId: string): void {
-  const stream = activeStreams.get(integrationId);
-  if (stream) {
-    stream.stop();
+  const entry = activeStreams.get(integrationId);
+  if (entry) {
+    flushStreamState(integrationId);
+    entry.stream.stop();
     activeStreams.delete(integrationId);
   }
 }
