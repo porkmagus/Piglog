@@ -118,9 +118,19 @@ docker compose -f compose.prod.yml --env-file .env.prod up -d
 Services:
 - `timescaledb` - Database
 - `redis` - Cache & BullMQ broker
+- `migrate` - One-off database migrations
 - `api` - Fastify HTTP API
 - `worker` - BullMQ background workers
 - `web` - React Router SSR/static served
+
+### Coolify Notes
+
+For Dockerfile-based deploys on Coolify, run database migrations separately from the API container.
+
+- The API image now starts the HTTP server only.
+- Run migrations with the same image using: `node packages/db/dist/migrate.js`
+- In Coolify, use a separate job/service for migrations before deploying the API app.
+- Point the API app to port `3001` unless you explicitly set `PORT` to something else.
 
 ## Salvaged from Flowpigdev
 
