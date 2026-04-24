@@ -25,9 +25,12 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/migrations ./packages/db/migrations
 COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
+COPY apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 3001
 EXPOSE 5140/udp
 EXPOSE 5141/tcp
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "const port = process.env.PORT || '3001'; require('http').get('http://localhost:' + port + '/health/ready', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "apps/api/dist/server.js"]

@@ -153,6 +153,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      SKIP_MIGRATIONS: "true"
       DATABASE_URL: postgresql://${DB_USER:-piglog}:${DB_PASSWORD}@timescaledb:5432/${DB_NAME:-piglog_prod}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}

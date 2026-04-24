@@ -138,21 +138,22 @@ Production deployment is Coolify-based and has some non-obvious constraints that
 
 ### API / Worker / Migrations
 
-The API container should not be relied on to run migrations during boot.
+Migrations run automatically on container startup via `docker-entrypoint.sh`.
 
-Current intended deployment model:
+The entrypoint script:
+1. Runs `node packages/db/dist/migrate.js` (idempotent, skips already-applied)
+2. Execs the CMD (API server by default, or worker if overridden)
 
-- run migrations separately
-- run API container separately
-- run worker process separately
+Environment variable `SKIP_MIGRATIONS=true` skips step 1 (used by worker in compose).
 
-Important note:
+For Coolify: just deploy the API image as-is. Migrations run on every container start.
 
-- migrations should be run with `node packages/db/dist/migrate.js`
+For compose: the `migrate` service still exists for explicit control, but the API container will also run migrations on boot (safe since idempotent).
 
 Relevant files:
 
 - `apps/api/Dockerfile`
+- `apps/api/docker-entrypoint.sh`
 - `compose.prod.yml`
 - `README.md`
 
