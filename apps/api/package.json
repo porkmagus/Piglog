@@ -9,7 +9,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "start:worker": "node dist/workers/index.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "11.2.0",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@types/node": "25.6.0",
     "tsx": "4.21.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "^3.2.4"
   }
 }
