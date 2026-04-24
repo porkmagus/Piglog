@@ -1,13 +1,12 @@
-import { Outlet, Link, useNavigate } from 'react-router';
+import { Outlet, Link } from 'react-router';
 import { useAuth } from '~/lib/auth-client';
 import { useWorkspace } from '~/lib/workspace';
-import { LogOut, LayoutDashboard, Radio, Settings, ChevronDown, Plus } from 'lucide-react';
+import { LayoutDashboard, Radio, Settings, ChevronDown, Settings as SettingsIcon } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AppLayout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
-  const navigate = useNavigate();
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   return (
@@ -21,9 +20,14 @@ export default function AppLayout() {
 
         {/* Workspace Switcher */}
         <div className="px-3 py-2 border-b border-[#2A2A2A]">
+          <div className="px-2 py-1 text-[11px] uppercase tracking-wider text-[#8A8F98]">
+            Workspace
+          </div>
           <button
-            onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-            className="flex items-center justify-between w-full px-2 py-1.5 rounded-md text-sm hover:bg-[#151515] transition-colors"
+            type="button"
+            onClick={() => setShowWorkspaceMenu((value) => !value)}
+            aria-label="Workspace switcher"
+            className="mt-1 flex items-center justify-between w-full px-2 py-1.5 rounded-md text-sm hover:bg-[#151515] transition-colors"
           >
             <div className="flex items-center gap-2 min-w-0">
               <div
@@ -86,18 +90,14 @@ export default function AppLayout() {
         </nav>
 
         <div className="border-t border-[#2A2A2A] p-2">
-          <div className="flex items-center justify-between px-2 py-1.5">
-            <div className="text-sm truncate">{user?.email}</div>
-            <button
-              onClick={async () => {
-                await logout();
-                navigate('/login');
-              }}
-              className="p-1 rounded hover:bg-[#151515] text-[#8A8F98]"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          <Link
+            to="/settings/account"
+            aria-label="Account settings"
+            className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#151515]"
+          >
+            <span className="text-sm truncate">{user?.email}</span>
+            <SettingsIcon className="w-4 h-4 text-[#8A8F98]" />
+          </Link>
         </div>
       </aside>
 
