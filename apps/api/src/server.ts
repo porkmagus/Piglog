@@ -30,10 +30,21 @@ async function start() {
 
     server.log.info(`API server running on http://${HOST}:${PORT}`);
 
+    // Start background workers (alert evaluation, webhook delivery, integration sync)
+    const { alertWorker } = await import('./workers/alert.worker.js');
+    const { webhookWorker } = await import('./workers/webhook.worker.js');
+    const { integrationSyncWorker } = await import('./workers/integration-sync.worker.js');
+    server.log.info('Background workers started');
+
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       server.log.info(`Received ${signal}, shutting down gracefully...`);
       await server.close();
+      await Promise.allSettled([
+        alertWorker?.close(),
+        webhookWorker?.close(),
+        integrationSyncWorker?.close(),
+      ]);
       process.exit(0);
     };
 
