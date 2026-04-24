@@ -10,6 +10,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 await import('./alert.worker.js');
 await import('./webhook.worker.js');
+await import('./integration-sync.worker.js');
 
 console.log('Workers started');
 
