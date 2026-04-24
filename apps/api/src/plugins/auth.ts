@@ -58,9 +58,22 @@ export const authPlugin = fp(async (fastify: FastifyInstance) => {
     },
     socialProviders: { github, google },
     session: { expiresIn: 60 * 60 * 24 * 7 },
+    advanced: {
+      cookies: {
+        session: {
+          attributes: {
+            sameSite: 'none',
+            secure: true,
+            httpOnly: true,
+            path: '/',
+            domain: new URL(getApiBaseUrl() || 'http://localhost:3001').hostname,
+          },
+        },
+      },
+    },
   });
 
-  fastify.decorate('auth', auth as FastifyInstance['auth']);
+  fastify.decorate('auth', auth as unknown as FastifyInstance['auth']);
 
   // Wire up Better Auth HTTP handler to Fastify routes
   fastify.register(async (authRoutes) => {
