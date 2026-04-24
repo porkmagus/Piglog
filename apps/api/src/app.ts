@@ -14,6 +14,7 @@ import uploadLogRoutes from './modules/uploads/upload-logs.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import alertRoutes from './modules/alerts/alerts.routes.js';
 import integrationRoutes from './modules/integrations/integrations.routes.js';
+import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import { redisConnection } from './queues/index.js';
 import { getTrustedOrigins } from './lib/env.js';
 import { startSyslogServer } from './lib/syslog-server.js';
@@ -93,6 +94,7 @@ export async function app(fastify: FastifyInstance) {
     await app.register(analyticsRoutes, { prefix: '/workspaces/:workspaceId/analytics' });
     await app.register(alertRoutes, { prefix: '/workspaces/:workspaceId/alerts' });
     await app.register(integrationRoutes, { prefix: '/workspaces/:workspaceId/integrations' });
+    await app.register(dashboardRoutes, { prefix: '/workspaces/:workspaceId/dashboard' });
   });
 
   // Start syslog listener (outside Fastify HTTP stack)
