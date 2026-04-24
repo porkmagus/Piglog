@@ -75,8 +75,12 @@ const alertWorker = new Worker(
 
 const log = createLogger('alert');
 
+alertWorker.on('error', (err) => {
+  log.error(`Alert worker error: ${err.message}`);
+});
+
 alertWorker.on('failed', (job, err) => {
-  log.error(`Job ${job?.id} failed: ${err.message}`);
+  log.error(`Alert job ${job?.id} failed: ${err.message}`);
 });
 
 export { alertWorker };

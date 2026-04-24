@@ -1,8 +1,20 @@
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 
-const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
+const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
+});
+
+redisConnection.on('error', (err) => {
+  // Log but don't crash — Redis is needed for queues/live-tail, not core ingestion
+  console.error(`[Redis] Connection error: ${err.message}`);
+});
+
+redisConnection.on('connect', () => {
+  const safeUrl = redisUrl.includes('://') ? redisUrl.split('@')[0] + '***@...' : redisUrl;
+  console.log('[Redis] Connected to', safeUrl);
 });
 
 export const logProcessQueue = new Queue('log-process', { connection: redisConnection });

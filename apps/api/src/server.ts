@@ -34,7 +34,12 @@ async function start() {
     const { alertWorker } = await import('./workers/alert.worker.js');
     const { webhookWorker } = await import('./workers/webhook.worker.js');
     const { integrationSyncWorker } = await import('./workers/integration-sync.worker.js');
-    server.log.info('Background workers started');
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const safeRedisUrl = redisUrl.includes('@') ? redisUrl.split('@')[0] + '***@...' : redisUrl;
+    server.log.info({
+      queues: ['alerts', 'webhooks', 'integration-sync'],
+      redisUrl: safeRedisUrl,
+    }, 'Background workers started');
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
