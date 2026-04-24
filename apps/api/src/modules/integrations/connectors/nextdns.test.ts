@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapNextDnsEventToPiglogLog } from './nextdns';
+import { mapNextDnsEventToPiglogLog } from './nextdns.js';
 
 describe('mapNextDnsEventToPiglogLog', () => {
   it('maps blocked dns events to WARN logs', () => {
