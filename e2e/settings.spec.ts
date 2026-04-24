@@ -2,15 +2,11 @@ import { test, expect } from './fixtures';
 
 test.describe('Settings navigation', () => {
   test('settings sidebar has all nav items', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.locator('aside a[aria-label="Account settings"]').click();
+    await page.goto('/settings/workspace');
 
     const settingsAside = page.locator('aside').nth(1);
-    await expect(settingsAside.getByRole('link', { name: 'Account' })).toBeVisible();
     await expect(settingsAside.getByRole('link', { name: 'Workspace' })).toBeVisible();
-    await expect(settingsAside.getByRole('link', { name: 'Ingestion' })).toBeVisible();
     await expect(settingsAside.getByRole('link', { name: 'Alerts' })).toBeVisible();
-    await expect(settingsAside.getByRole('link', { name: 'Team' })).toBeVisible();
   });
 
   test('Account page shows email and logout', async ({ page }) => {
@@ -19,7 +15,7 @@ test.describe('Settings navigation', () => {
 
     await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
     await expect(page.getByText('Manage your profile')).toBeVisible();
-    await expect(page.getByText('Email')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Email' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
   });
 

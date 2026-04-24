@@ -39,19 +39,19 @@ beforeEach(() => {
     ok: true,
     status: 200,
     headers: { get: vi.fn().mockReturnValue('application/json') },
-    json: () => Promise.resolve({ volume: [], levels: [], services: [], hosts: [], total24h: 0 }),
+    json: () => Promise.resolve({ widgets: [], isPersonal: false }),
     text: () => Promise.resolve(''),
   };
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
 });
 
 describe('DashboardPage empty state', () => {
-  it('offers add source and add integration actions', async () => {
+  it('shows edit dashboard button and empty message', async () => {
     renderWithProviders(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /add source/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /add integration/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /edit dashboard/i })).toBeInTheDocument();
+      expect(screen.getByText(/no widgets on your dashboard/i)).toBeInTheDocument();
     });
   });
 });

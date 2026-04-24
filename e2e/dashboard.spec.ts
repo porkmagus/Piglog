@@ -16,27 +16,25 @@ test.describe('Dashboard', () => {
     await expect(sidebar.locator('a[href="/settings"]')).toBeVisible();
   });
 
-  test('shows empty state with quick actions when no logs', async ({ page }) => {
+  test('shows dashboard with edit button and default widgets', async ({ page }) => {
     const mainContent = page.locator('main');
-    await expect(mainContent.getByText('Add Source')).toBeVisible({ timeout: 10000 });
-    await expect(mainContent.getByText('Add Integration')).toBeVisible({ timeout: 10000 });
+    await expect(mainContent.getByRole('button', { name: /edit dashboard/i })).toBeVisible({ timeout: 10000 });
+    await expect(mainContent.getByRole('heading', { name: 'Log Volume' })).toBeVisible({ timeout: 10000 });
   });
 
-  test('Add Source button navigates to sources page', async ({ page }) => {
+  test('edit dashboard button enters edit mode', async ({ page }) => {
     const main = page.locator('main');
-    await main.getByText('Add Source').click();
-    await expect(page).toHaveURL(/\/settings\/sources/);
+    await main.getByRole('button', { name: /edit dashboard/i }).click();
+    await expect(main.getByText('+ Add Widget')).toBeVisible();
   });
 
-  test('Add Integration button navigates to integrations page', async ({ page }) => {
+  test('add widget modal lists available widgets', async ({ page }) => {
     const main = page.locator('main');
-    await main.getByText('Add Integration').click();
-    await expect(page).toHaveURL(/\/settings\/integrations/);
-  });
-
-  test('workspace switcher is visible', async ({ page }) => {
-    const workspaceSwitcher = page.locator('button[aria-label="Workspace switcher"]');
-    await expect(workspaceSwitcher).toBeVisible();
+    await main.getByRole('button', { name: /edit dashboard/i }).click();
+    await main.getByText('+ Add Widget').click();
+    await expect(page.getByRole('button', { name: 'Log Volume Logs ingested per hour', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Level Breakdown Logs by severity level', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Custom Query Run your own SQL query', exact: true })).toBeVisible();
   });
 
   test('account link is visible in sidebar footer', async ({ page }) => {

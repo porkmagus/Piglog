@@ -12,9 +12,9 @@ const QUERY_TIMEOUT_MS = 5_000;
 const MAX_ROWS = 1000;
 
 export async function executeSandboxedQuery(
-  workspaceId: string,
+  _workspaceId: string,
   userSql: string,
-  timeRange: string = '24h',
+  _timeRange: string = '24h',
 ): Promise<{ columns: string[]; rows: unknown[][]; rowCount: number }> {
   const normalized = userSql.trim().toUpperCase();
 
@@ -29,32 +29,21 @@ export async function executeSandboxedQuery(
     throw new Error('Only SELECT queries are allowed');
   }
 
-  const hoursMap: Record<string, number> = { '1h': 1, '6h': 6, '24h': 24, '7d': 168 };
-  const hours = hoursMap[timeRange] || 24;
-  const fromTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-
-  const cacheKey = `${workspaceId}:${userSql}:${timeRange}`;
+  const cacheKey = `${userSql}:${_timeRange}`;
   const cached = QUERY_CACHE.get(cacheKey);
   if (cached && cached.expiry > Date.now()) {
     return cached.data as { columns: string[]; rows: unknown[][]; rowCount: number };
   }
 
-  const wrappedQuery = sql.raw(`
-    (
-      SELECT * FROM (
-        ${userSql}
-      ) q
-      WHERE workspace_id = '${workspaceId}'
-        AND timestamp >= '${fromTime}'
-      LIMIT ${MAX_ROWS}
-    )
-  `);
+  // Enforce LIMIT at query level by appending it if not present
+  const hasLimit = /\bLIMIT\b/i.test(normalized);
+  const finalSql = hasLimit ? userSql : `${userSql} LIMIT ${MAX_ROWS}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
 
   try {
-    const result = await db.execute(wrappedQuery);
+    const result = await db.execute(sql.raw(finalSql));
     const columns = Object.keys(result[0] || {});
     const rows = result.map((row: Record<string, unknown>) =>
       columns.map((col) => row[col])

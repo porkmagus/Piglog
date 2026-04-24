@@ -30,7 +30,7 @@ export async function getMergedLayout(workspaceId: string, userId: string | null
 
   let defaultWidgets: DashboardWidget[] = DEFAULT_WIDGETS;
   if (workspaceDefault) {
-    defaultWidgets = JSON.parse(workspaceDefault.layout as string) as DashboardWidget[];
+    defaultWidgets = (workspaceDefault.layout as DashboardWidget[]) || DEFAULT_WIDGETS;
   }
 
   if (!userId) {
@@ -49,10 +49,7 @@ export async function getMergedLayout(workspaceId: string, userId: string | null
     return { widgets: defaultWidgets, isPersonal: false };
   }
 
-  const personalData = JSON.parse(personal.layout as string) as {
-    widgets?: DashboardWidget[];
-    hiddenIds?: string[];
-  };
+  const personalData = (personal.layout as { widgets?: DashboardWidget[]; hiddenIds?: string[] }) || {};
 
   const personalWidgets = personalData.widgets || [];
   const hiddenIds = personalData.hiddenIds || [];

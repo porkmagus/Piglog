@@ -15,6 +15,8 @@ export const test = base.extend<{ loginAsUser: () => Promise<void> }>({
     await use(async () => {
       await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
+      // Ensure workspace context is loaded by waiting for dashboard content
+      await expect(page.locator('main')).not.toHaveText('Loading', { timeout: 15000 });
     });
   },
 });
