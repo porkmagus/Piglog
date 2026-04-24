@@ -4,11 +4,10 @@ import { mapNextDnsEventToPiglogLog } from './nextdns.js';
 describe('mapNextDnsEventToPiglogLog', () => {
   it('maps blocked dns events to WARN logs', () => {
     const result = mapNextDnsEventToPiglogLog({
-      id: '1',
       timestamp: '2026-04-24T12:00:00.000Z',
       status: 'blocked',
-      query: 'facebook.com',
-      deviceName: 'MacBook Pro',
+      domain: 'facebook.com',
+      device: { name: 'MacBook Pro' },
     });
 
     expect(result.level).toBe('WARN');
@@ -18,10 +17,9 @@ describe('mapNextDnsEventToPiglogLog', () => {
 
   it('maps error dns events to ERROR logs', () => {
     const result = mapNextDnsEventToPiglogLog({
-      id: '2',
       timestamp: '2026-04-24T12:00:00.000Z',
       status: 'error',
-      query: 'example.com',
+      domain: 'example.com',
     });
 
     expect(result.level).toBe('ERROR');
@@ -29,10 +27,9 @@ describe('mapNextDnsEventToPiglogLog', () => {
 
   it('maps normal dns events to INFO logs', () => {
     const result = mapNextDnsEventToPiglogLog({
-      id: '3',
       timestamp: '2026-04-24T12:00:00.000Z',
-      status: 'resolved',
-      query: 'google.com',
+      status: 'default',
+      domain: 'google.com',
       clientIp: '192.168.1.1',
     });
 

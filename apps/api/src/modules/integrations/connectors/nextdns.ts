@@ -8,54 +8,56 @@ interface NextDnsProfile {
 }
 
 interface NextDnsLogEvent {
-  id: string;
+  id?: string;
   timestamp: string;
+  domain: string;
   status: string;
-  query: string;
-  deviceName?: string;
   clientIp?: string;
+  client?: string;
+  device?: { name: string };
   [key: string]: unknown;
 }
 
-const MAX_SYNC_PAGES = 50;
 const SYNC_BATCH_SIZE = 500;
 
 export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
+  const deviceName = event.device?.name || event.client;
 
   return {
     timestamp: event.timestamp,
     level,
     service: 'nextdns',
-    host: event.deviceName || event.clientIp || 'nextdns',
-    message: `${event.status} dns query for ${event.query}`,
+    host: deviceName || event.clientIp || 'nextdns',
+    message: `${event.status} dns query for ${event.domain}`,
     metadata: event,
   };
 }
 
-async function fetchNextDnsLogs(profileId: string, secret: string, since?: string): Promise<NextDnsLogEvent[]> {
-  const url = since
-    ? `https://api.nextdns.io/profile/${profileId}/log?since=${since}`
-    : `https://api.nextdns.io/profile/${profileId}/log`;
+async function fetchNextDnsLogs(profileId: string, apiKey: string, cursor?: string): Promise<{ logs: NextDnsLogEvent[]; nextCursor: string | null }> {
+  const params = new URLSearchParams({ limit: String(SYNC_BATCH_SIZE) });
+  if (cursor) params.set('cursor', cursor);
 
-  const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${secret}` },
+  const res = await fetch(`https://api.nextdns.io/profiles/${profileId}/logs?${params}`, {
+    headers: { 'X-Api-Key': apiKey },
   });
 
   if (!res.ok) {
     throw new Error(`NextDNS sync failed: ${res.status} ${res.statusText}`);
   }
 
-  const data: unknown = await res.json();
-  return Array.isArray(data) ? data : [];
+  const result = (await res.json()) as { data?: NextDnsLogEvent[]; meta?: { pagination?: { cursor?: string | null } } };
+  const logs = result.data || [];
+  const nextCursor = result.meta?.pagination?.cursor ?? null;
+  return { logs, nextCursor };
 }
 
 export const nextDnsConnector: IntegrationConnector = {
   provider: 'nextdns',
 
   async testConnection(_config: Record<string, unknown>, secret: string) {
-    const res = await fetch('https://api.nextdns.io/profile', {
-      headers: { 'Authorization': `Bearer ${secret}` },
+    const res = await fetch('https://api.nextdns.io/profiles', {
+      headers: { 'X-Api-Key': secret },
     });
     if (!res.ok) {
       throw new Error(`NextDNS connection test failed: ${res.status} ${res.statusText}`);
@@ -63,14 +65,14 @@ export const nextDnsConnector: IntegrationConnector = {
   },
 
   async discoverEntities(_config: Record<string, unknown>, secret: string): Promise<DiscoveredIntegrationEntity[]> {
-    const res = await fetch('https://api.nextdns.io/profile', {
-      headers: { 'Authorization': `Bearer ${secret}` },
+    const res = await fetch('https://api.nextdns.io/profiles', {
+      headers: { 'X-Api-Key': secret },
     });
     if (!res.ok) {
       throw new Error(`NextDNS discovery failed: ${res.status} ${res.statusText}`);
     }
-    const data: unknown = await res.json();
-    const profiles: NextDnsProfile[] = Array.isArray(data) ? data : [];
+    const result = (await res.json()) as { data?: NextDnsProfile[] };
+    const profiles: NextDnsProfile[] = result.data || [];
     return profiles.map((p) => ({
       id: p.id,
       name: p.name || p.id,
@@ -85,33 +87,40 @@ export const nextDnsConnector: IntegrationConnector = {
     secret: string;
     state: Record<string, unknown>;
   }): Promise<{ nextState: Record<string, unknown>; accepted: number }> {
-    const profileId = params.config.profileId as string;
-    if (!profileId) {
+    const profileIds = (params.config.profileIds as string[]) || [];
+    if (profileIds.length === 0) {
       return { nextState: params.state, accepted: 0 };
     }
 
-    let cursor = (params.state.cursor as string) || undefined;
+    const cursors = (params.state.cursors as Record<string, string>) || {};
     let totalAccepted = 0;
-    let pages = 0;
+    const newCursors: Record<string, string> = {};
 
-    do {
-      const logs = await fetchNextDnsLogs(profileId, params.secret, cursor);
+    for (const profileId of profileIds) {
+      let profileCursor: string | undefined = cursors[profileId];
 
-      if (logs.length === 0) break;
+      do {
+        const { logs, nextCursor } = await fetchNextDnsLogs(profileId, params.secret, profileCursor);
 
-      const batch = logs.slice(0, SYNC_BATCH_SIZE);
-      const mappedLogs = batch.map(mapNextDnsEventToPiglogLog);
-      const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
-      totalAccepted += result.accepted;
+        if (logs.length === 0) break;
 
-      cursor = logs[logs.length - 1].id;
-      pages++;
-    } while (pages < MAX_SYNC_PAGES);
+        const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
+        const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
+        totalAccepted += result.accepted;
+
+        if (nextCursor) {
+          newCursors[profileId] = nextCursor;
+          profileCursor = nextCursor;
+        } else {
+          profileCursor = undefined;
+        }
+      } while (profileCursor);
+    }
 
     return {
       nextState: {
         ...params.state,
-        cursor,
+        cursors: { ...cursors, ...newCursors },
       },
       accepted: totalAccepted,
     };
