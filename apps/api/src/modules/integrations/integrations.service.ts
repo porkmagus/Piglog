@@ -169,14 +169,15 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
           .set({ status: 'SYNCING' })
           .where(eq(integrationSource.id, is.id));
 
-        const syncState = (cfg?.syncState as Record<string, unknown>) || {};
+        const syncStates = (cfg?.syncState as Record<string, Record<string, unknown>>) || {};
+        const sourceState = syncStates[is.sourceId] || {};
         const result = await connector.sync({
           workspaceId: int.workspaceId,
           integrationId: int.id,
           sourceId: is.sourceId,
           config: { ...cfg, profileId: is.externalId },
           secret: int.secret || '',
-          state: syncState,
+          state: sourceState,
         });
         totalAccepted += result.accepted;
 
