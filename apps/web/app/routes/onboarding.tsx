@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '~/lib/auth-client';
 import { useWorkspace } from '~/lib/workspace';
@@ -12,7 +12,7 @@ interface CreatedWorkspace {
 
 export default function OnboardingPage() {
   const { user } = useAuth();
-  const { setActiveWorkspace, refreshWorkspaces } = useWorkspace();
+  const { workspaces, setActiveWorkspace, refreshWorkspaces } = useWorkspace();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [workspaceName, setWorkspaceName] = useState('');
@@ -22,6 +22,12 @@ export default function OnboardingPage() {
   const [createdWorkspace, setCreatedWorkspace] = useState<CreatedWorkspace | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user && step === 1 && !createdWorkspace && workspaces.length > 0) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [createdWorkspace, navigate, step, user, workspaces.length]);
 
   async function createWorkspace(e: React.FormEvent) {
     e.preventDefault();
