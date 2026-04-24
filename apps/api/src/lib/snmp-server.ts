@@ -20,6 +20,30 @@ const GENERIC_TRAP_NAMES: Record<number, string> = {
   6: 'enterpriseSpecific',
 };
 
+let missingSchemaWarningShown = false;
+
+function isMissingRelationError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && err.code === '42P01';
+}
+
+async function getConfiguredSnmpSources() {
+  try {
+    return await db.query.logSource.findMany({
+      where: and(eq(logSource.type, 'snmp'), isNull(logSource.deletedAt)),
+    });
+  } catch (err) {
+    if (isMissingRelationError(err)) {
+      if (!missingSchemaWarningShown) {
+        missingSchemaWarningShown = true;
+        console.warn('[snmp] Skipping SNMP bootstrap because database schema is not ready yet.');
+      }
+      return [];
+    }
+
+    throw err;
+  }
+}
+
 function genericTrapToLevel(trapType: number): typeof import('@piglog/db').logLevelEnum.enumValues[number] {
   switch (trapType) {
     case 2: // linkDown
@@ -51,9 +75,7 @@ async function handleNotification(notification: any) {
   const pdu = notification.pdu;
 
   // Find matching SNMP source by sender IP
-  const sources = await db.query.logSource.findMany({
-    where: and(eq(logSource.type, 'snmp'), isNull(logSource.deletedAt)),
-  });
+  const sources = await getConfiguredSnmpSources();
 
   const source = sources.find((s) => {
     const config = (s.config as Record<string, unknown> | null) || {};
@@ -106,6 +128,12 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
   const port = options.port || parseInt(process.env.SNMP_TRAP_PORT || '1620', 10);
   const host = options.host || process.env.SNMP_HOST || '0.0.0.0';
 
+  const sources = await getConfiguredSnmpSources();
+  if (sources.length === 0) {
+    console.log('[snmp] No configured sources available. SNMP trap listener not started.');
+    return null;
+  }
+
   const receiver = snmp.createReceiver(
     {
       port,
@@ -123,11 +151,6 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
       });
     }
   );
-
-  // Load configured SNMP sources and set up authorizers
-  const sources = await db.query.logSource.findMany({
-    where: and(eq(logSource.type, 'snmp'), isNull(logSource.deletedAt)),
-  });
 
   const authorizer = receiver.getAuthorizer();
 
