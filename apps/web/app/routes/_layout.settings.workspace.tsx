@@ -18,9 +18,14 @@ export default function WorkspaceSettingsPage() {
 
   useEffect(() => {
     if (!activeWorkspace) return;
-    fetchApi(`/workspaces/${activeWorkspace.id}/members`)
-      .then((data) => setMembers(data || []))
-      .catch(() => setMembers([]));
+    (async () => {
+      try {
+        const data = await fetchApi(`/workspaces/${activeWorkspace.id}/members`);
+        setMembers(data || []);
+      } catch {
+        setMembers([]);
+      }
+    })();
   }, [activeWorkspace?.id]);
 
   async function saveWorkspace(e: React.FormEvent) {
