@@ -12,6 +12,7 @@ interface Source {
   createdAt: string;
   volume24h: number;
   lastSeen: string | null;
+  isInternal: boolean;
 }
 
 function TypeIcon({ type }: { type: string }) {
@@ -37,6 +38,7 @@ export default function SourcesPage() {
     privacyPassphrase: '',
   });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeWorkspace) loadSources();
@@ -45,11 +47,13 @@ export default function SourcesPage() {
   async function loadSources() {
     if (!activeWorkspace) return;
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchApi(`/workspaces/${activeWorkspace.id}/sources`);
       setSources(data);
-    } catch {
+    } catch (err) {
       setSources([]);
+      setError(err instanceof Error ? err.message : 'Failed to load sources');
     } finally {
       setLoading(false);
     }
@@ -58,6 +62,7 @@ export default function SourcesPage() {
   async function createSource(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim() || !activeWorkspace) return;
+    setError(null);
     const body: Record<string, unknown> = { name: newName, type: newType };
     if (newType === 'snmp') {
       body.config = {
@@ -81,29 +86,31 @@ export default function SourcesPage() {
       setNewName('');
       setShowCreate(false);
       loadSources();
-    } catch {
-      alert('Failed to create source');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create source');
     }
   }
 
   async function deleteSource(id: string) {
     if (!activeWorkspace) return;
-    if (!confirm('Delete this source? Logs will be retained.')) return;
+    if (!window.confirm('Delete this source? Logs will be retained.')) return;
+    setError(null);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/sources/${id}`, { method: 'DELETE' });
       loadSources();
-    } catch {
-      alert('Failed to delete source');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete source');
     }
   }
 
   async function regenerateKey(id: string) {
     if (!activeWorkspace) return;
+    setError(null);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/sources/${id}/regenerate-key`, { method: 'POST' });
       loadSources();
-    } catch {
-      alert('Failed to regenerate key');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to regenerate key');
     }
   }
 
@@ -262,8 +269,16 @@ export default function SourcesPage() {
           </form>
         )}
 
+        {error && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">{error}</div>
+        )}
         {loading ? (
           <div className="text-sm text-[#8A8F98]">Loading sources...</div>
+        ) : sources.filter(s => s.isInternal).length > 0 && sources.filter(s => !s.isInternal).length === 0 ? (
+          <div className="rounded-lg border border-[#2A2A2A] bg-[#151515] p-8 text-center">
+            <Network className="w-8 h-8 text-[#2A2A2A] mx-auto mb-3" />
+            <p className="text-sm text-[#8A8F98]">No user-managed sources yet. Integration-managed sources are shown in the Integrations page.</p>
+          </div>
         ) : sources.length === 0 ? (
           <div className="rounded-lg border border-[#2A2A2A] bg-[#151515] p-8 text-center">
             <Radio className="w-8 h-8 text-[#2A2A2A] mx-auto mb-3" />
@@ -283,7 +298,7 @@ export default function SourcesPage() {
                 </tr>
               </thead>
               <tbody>
-                {sources.map((source) => (
+                {sources.filter(s => !s.isInternal).map((source) => (
                   <tr
                     key={source.id}
                     className="border-b border-[#2A2A2A]/50 hover:bg-[#1a1a1a] transition-colors"

@@ -18,6 +18,7 @@ import { redisConnection } from './queues/index.js';
 import { getTrustedOrigins } from './lib/env.js';
 import { startSyslogServer } from './lib/syslog-server.js';
 import { startSnmpServer } from './lib/snmp-server.js';
+import { getGlobalRateLimitKey, shouldBypassGlobalRateLimit } from './lib/rate-limit.js';
 
 export async function app(fastify: FastifyInstance) {
   const trustedOrigins = getTrustedOrigins();
@@ -31,7 +32,8 @@ export async function app(fastify: FastifyInstance) {
     max: 100,
     timeWindow: '1 minute',
     redis: redisConnection,
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => getGlobalRateLimitKey(req),
+    allowList: (req) => shouldBypassGlobalRateLimit(req),
   });
 
   await fastify.register(multipart, {

@@ -8,10 +8,24 @@ import type { CreateIntegrationInput } from './integrations.schemas.js';
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 export async function listIntegrations(workspaceId: string) {
-  return db
+  const integrations = await db
     .select()
     .from(integration)
     .where(eq(integration.workspaceId, workspaceId));
+
+  return integrations.map((int) => {
+    return {
+      ...int,
+      sources: [],
+    };
+  });
+}
+
+export async function listIntegrationSources(integrationId: string) {
+  return db
+    .select()
+    .from(integrationSource)
+    .where(eq(integrationSource.integrationId, integrationId));
 }
 
 export async function createIntegrationWithSources(input: CreateIntegrationInput & { workspaceId: string }) {
@@ -118,9 +132,11 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
 
   const connector = getConnector(int.provider);
   if (!connector) {
+    const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
+    (cfg as Record<string, unknown>).errorMessage = `Unknown provider: ${int.provider}`;
     await db
       .update(integration)
-      .set({ status: 'ERROR', updatedAt: new Date() })
+      .set({ status: 'ERROR', config: cfg, updatedAt: new Date() })
       .where(eq(integration.id, integrationId));
     return;
   }
@@ -130,7 +146,7 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
     .set({ status: 'SYNCING', updatedAt: new Date() })
     .where(eq(integration.id, integrationId));
 
-  try {
+    try {
     const sources = await db
       .select()
       .from(integrationSource)
@@ -142,40 +158,72 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
       );
 
     let totalAccepted = 0;
+    let anyError = false;
     const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
 
     for (const is of sources) {
-      const syncState = (int.config as Record<string, unknown>)?.syncState as Record<string, unknown> || {};
-      const result = await connector.sync({
-        workspaceId: int.workspaceId,
-        integrationId: int.id,
-        sourceId: is.sourceId,
-        config: { ...cfg, profileId: is.externalId },
-        secret: int.secret || '',
-        state: syncState,
-      });
-      totalAccepted += result.accepted;
+      try {
+        await db
+          .update(integrationSource)
+          .set({ status: 'SYNCING' })
+          .where(eq(integrationSource.id, is.id));
 
-      /* Persist cursor per source */
-      const nextState = result.nextState as Record<string, unknown> || {};
-      if (!cfg.syncState) (cfg as Record<string, unknown>).syncState = {};
-      (cfg.syncState as Record<string, Record<string, unknown>>)[is.sourceId] = nextState;
+        const syncState = (cfg?.syncState as Record<string, unknown>) || {};
+        const result = await connector.sync({
+          workspaceId: int.workspaceId,
+          integrationId: int.id,
+          sourceId: is.sourceId,
+          config: { ...cfg, profileId: is.externalId },
+          secret: int.secret || '',
+          state: syncState,
+        });
+        totalAccepted += result.accepted;
+
+        /* Persist cursor per source */
+        const nextState = result.nextState as Record<string, unknown> || {};
+        if (!cfg.syncState) (cfg as Record<string, unknown>).syncState = {};
+        (cfg.syncState as Record<string, Record<string, unknown>>)[is.sourceId] = nextState;
+
+        await db
+          .update(integrationSource)
+          .set({ status: 'CONNECTED' })
+          .where(eq(integrationSource.id, is.id));
+      } catch (sourceErr) {
+        anyError = true;
+        await db
+          .update(integrationSource)
+          .set({ status: 'ERROR' })
+          .where(eq(integrationSource.id, is.id));
+      }
     }
 
     await db
       .update(integration)
       .set({
-        status: 'CONNECTED',
+        status: anyError ? 'ERROR' : 'CONNECTED',
         lastSyncedAt: new Date(),
         updatedAt: new Date(),
         config: cfg,
       })
       .where(eq(integration.id, integrationId));
   } catch (err) {
+    const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
+    (cfg as Record<string, unknown>).errorMessage = err instanceof Error ? err.message : 'Sync failed';
     await db
       .update(integration)
-      .set({ status: 'ERROR', updatedAt: new Date() })
+      .set({ status: 'ERROR', config: cfg, updatedAt: new Date() })
       .where(eq(integration.id, integrationId));
+
+    /* Mark all enabled sources as ERROR on catastrophic failure */
+    await db
+      .update(integrationSource)
+      .set({ status: 'ERROR' })
+      .where(
+        and(
+          eq(integrationSource.integrationId, integrationId),
+          eq(integrationSource.isEnabled, true),
+        )
+      );
 
     throw err;
   }
@@ -198,7 +246,7 @@ export async function enableIntegration(integrationId: string): Promise<void> {
 
   await db
     .update(integrationSource)
-    .set({ isEnabled: true })
+    .set({ isEnabled: true, status: 'CONNECTED' })
     .where(eq(integrationSource.integrationId, integrationId));
 
   /* Re-schedule periodic sync */

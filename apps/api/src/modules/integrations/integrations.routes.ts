@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth, type AuthenticatedRequest } from '../../plugins/auth.js';
 import { extractWorkspace, type WorkspaceRequest } from '../../middleware/workspace.js';
-import { listIntegrations, createIntegrationWithSources, disableIntegration, enableIntegration, deleteIntegration } from './integrations.service.js';
+import { listIntegrations, listIntegrationSources, createIntegrationWithSources, disableIntegration, enableIntegration, deleteIntegration } from './integrations.service.js';
 import { createIntegrationSchema, testConnectionSchema } from './integrations.schemas.js';
 import { getConnector } from './connectors/index.js';
 
@@ -11,7 +11,31 @@ export default async function integrationRoutes(app: FastifyInstance) {
   app.get('/', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
-    return listIntegrations(request.workspace!.id);
+    const integrations = await listIntegrations(request.workspace!.id);
+    const results = await Promise.all(integrations.map(async (int) => {
+      const sources = await listIntegrationSources(int.id);
+      const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
+      const { errorMessage, ...safeConfig } = cfg;
+      return {
+        id: int.id,
+        provider: int.provider,
+        name: int.name,
+        status: int.status,
+        config: safeConfig,
+        errorMessage: errorMessage as string | null,
+        lastSyncedAt: int.lastSyncedAt,
+        createdAt: int.createdAt,
+        sources: sources.map((s) => ({
+          id: s.id,
+          sourceId: s.sourceId,
+          externalId: s.externalId,
+          externalName: s.externalName,
+          status: s.status,
+          isEnabled: s.isEnabled,
+        })),
+      };
+    }));
+    return results;
   });
 
   app.post('/', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {

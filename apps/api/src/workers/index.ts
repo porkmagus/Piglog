@@ -8,15 +8,19 @@ if (process.env.NODE_ENV !== 'production') {
   config({ path: resolve(currentDir, '../../../../.env.dev') });
 }
 
-await import('./alert.worker.js');
-await import('./webhook.worker.js');
-await import('./integration-sync.worker.js');
+const alertWorker = (await import('./alert.worker.js')).alertWorker;
+const webhookWorker = (await import('./webhook.worker.js')).webhookWorker;
+const integrationSyncWorker = (await import('./integration-sync.worker.js')).integrationSyncWorker;
 
 console.log('Workers started');
 
-// Graceful shutdown
-const shutdown = (signal: string) => {
+const shutdown = async (signal: string) => {
   console.log(`Received ${signal}, shutting down workers...`);
+  await Promise.allSettled([
+    alertWorker?.close(),
+    webhookWorker?.close(),
+    integrationSyncWorker?.close(),
+  ]);
   process.exit(0);
 };
 

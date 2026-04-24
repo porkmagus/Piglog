@@ -10,3 +10,7 @@ data
 .idea
 .vscode
 .worktrees
+e2e/.auth/
+test-results/
+playwright.config.js
+e2e/*.js

@@ -75,3 +75,5 @@ const alertWorker = new Worker(
 alertWorker.on('failed', (job, err) => {
   console.error(`Alert job ${job?.id} failed:`, err);
 });
+
+export { alertWorker };

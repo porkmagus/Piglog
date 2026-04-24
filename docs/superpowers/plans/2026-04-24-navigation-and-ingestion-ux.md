@@ -56,7 +56,7 @@
 - Create: `apps/web/app/test/setup.ts`
 - Create: `apps/web/app/test/render.tsx`
 
-- [ ] **Step 1: Write the failing config test by adding a no-op route test file**
+- [x] **Step 1: Write the failing config test by adding a no-op route test file**
 
 ```tsx
 // apps/web/app/routes/_layout.test.tsx
@@ -69,13 +69,13 @@ describe('web test harness', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails because Vitest is not configured**
+- [x] **Step 2: Run test to verify it fails because Vitest is not configured**
 
 Run: `npm --workspace @piglog/web exec vitest run apps/web/app/routes/_layout.test.tsx`
 
 Expected: FAIL with a command-not-found or missing config/dependency error.
 
-- [ ] **Step 3: Add the minimal test infrastructure**
+- [x] **Step 3: Add the minimal test infrastructure**
 
 ```json
 // apps/web/package.json
@@ -131,13 +131,13 @@ export function renderRoute(ui: ReactElement) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify the harness passes**
+- [x] **Step 4: Run test to verify the harness passes**
 
 Run: `npm install && npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.test.tsx`
 
 Expected: PASS with `1 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/package.json apps/web/vitest.config.ts apps/web/app/test/setup.ts apps/web/app/test/render.tsx apps/web/app/routes/_layout.test.tsx package-lock.json
@@ -152,7 +152,7 @@ git commit -m "test: add web vitest harness"
 - Create: `apps/web/app/routes/_layout.settings.account.tsx`
 - Test: `apps/web/app/routes/_layout.test.tsx`
 
-- [ ] **Step 1: Write the failing sidebar tests**
+- [x] **Step 1: Write the failing sidebar tests**
 
 ```tsx
 // apps/web/app/routes/_layout.test.tsx
@@ -186,13 +186,13 @@ describe('AppLayout', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.test.tsx`
 
 Expected: FAIL because the current layout has no account settings route and the workspace control semantics do not match.
 
-- [ ] **Step 3: Add the route and minimal page**
+- [x] **Step 3: Add the route and minimal page**
 
 ```ts
 // apps/web/app/routes.ts
@@ -243,7 +243,7 @@ export default function AccountSettingsPage() {
 }
 ```
 
-- [ ] **Step 4: Update the sidebar layout**
+- [x] **Step 4: Update the sidebar layout**
 
 ```tsx
 // apps/web/app/routes/_layout.tsx
@@ -272,13 +272,13 @@ export default function AccountSettingsPage() {
 </Link>
 ```
 
-- [ ] **Step 5: Run the tests and typecheck**
+- [x] **Step 5: Run the tests and typecheck**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.test.tsx && npm --workspace @piglog/web run typecheck`
 
 Expected: PASS, then no TypeScript errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/app/routes.ts apps/web/app/routes/_layout.tsx apps/web/app/routes/_layout.settings.account.tsx apps/web/app/routes/_layout.test.tsx
@@ -292,7 +292,7 @@ git commit -m "feat: add account settings and clean sidebar semantics"
 - Create: `apps/web/app/routes/_layout.settings.ingestion.tsx`
 - Test: `apps/web/app/routes/_layout.settings.ingestion.test.tsx`
 
-- [ ] **Step 1: Write the failing ingestion page tests**
+- [x] **Step 1: Write the failing ingestion page tests**
 
 ```tsx
 // apps/web/app/routes/_layout.settings.ingestion.test.tsx
@@ -318,13 +318,13 @@ describe('IngestionPage', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.ingestion.test.tsx`
 
 Expected: FAIL because the route and page do not exist yet.
 
-- [ ] **Step 3: Replace the settings nav item and create the ingestion page**
+- [x] **Step 3: Replace the settings nav item and create the ingestion page**
 
 ```tsx
 // apps/web/app/routes/_layout.settings.tsx
@@ -375,13 +375,13 @@ export default function IngestionPage() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify the page behavior and settings nav**
+- [x] **Step 4: Run tests to verify the page behavior and settings nav**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.ingestion.test.tsx`
 
 Expected: PASS with both assertions green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/routes/_layout.settings.tsx apps/web/app/routes/_layout.settings.ingestion.tsx apps/web/app/routes/_layout.settings.ingestion.test.tsx
@@ -395,7 +395,7 @@ git commit -m "feat: add ingestion settings landing page"
 - Create: `apps/web/app/routes/_layout.settings.integrations.tsx`
 - Modify: `apps/web/app/routes/_layout.settings.sources.tsx`
 
-- [ ] **Step 1: Write the failing route smoke test**
+- [x] **Step 1: Write the failing route smoke test**
 
 ```tsx
 // apps/web/app/routes/_layout.settings.ingestion.test.tsx
@@ -405,13 +405,13 @@ it('links to an integrations page', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails if the route is missing**
+- [x] **Step 2: Run the test and confirm it fails if the route is missing**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.ingestion.test.tsx`
 
 Expected: FAIL once the link target is unresolved in the route tree.
 
-- [ ] **Step 3: Add the placeholder route and adjust Sources copy**
+- [x] **Step 3: Add the placeholder route and adjust Sources copy**
 
 ```ts
 // apps/web/app/routes.ts
@@ -450,13 +450,13 @@ export default function IntegrationsPage() {
 <p className="text-sm text-[#8A8F98]">Sources are push-style ingestion endpoints such as HTTP JSON, Syslog, Vector, and Filebeat.</p>
 ```
 
-- [ ] **Step 4: Run the relevant tests and build**
+- [x] **Step 4: Run the relevant tests and build**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.ingestion.test.tsx && npm --workspace @piglog/web run build`
 
 Expected: PASS, then a successful production build.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/routes.ts apps/web/app/routes/_layout.settings.integrations.tsx apps/web/app/routes/_layout.settings.sources.tsx
@@ -469,7 +469,7 @@ git commit -m "feat: add integrations route scaffold"
 - Modify: `apps/web/app/routes/_layout.dashboard.tsx`
 - Test: `apps/web/app/routes/_layout.dashboard.test.tsx`
 
-- [ ] **Step 1: Write the failing dashboard test**
+- [x] **Step 1: Write the failing dashboard test**
 
 ```tsx
 // apps/web/app/routes/_layout.dashboard.test.tsx
@@ -488,13 +488,13 @@ describe('DashboardPage empty state', () => {
 });
 ```
 
-- [ ] **Step 2: Run the dashboard test and verify it fails**
+- [x] **Step 2: Run the dashboard test and verify it fails**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.dashboard.test.tsx`
 
 Expected: FAIL because the current empty state only exposes source-related navigation.
 
-- [ ] **Step 3: Update the empty state UI**
+- [x] **Step 3: Update the empty state UI**
 
 ```tsx
 // apps/web/app/routes/_layout.dashboard.tsx
@@ -517,13 +517,13 @@ Expected: FAIL because the current empty state only exposes source-related navig
 </div>
 ```
 
-- [ ] **Step 4: Run the dashboard test and a full web verification pass**
+- [x] **Step 4: Run the dashboard test and a full web verification pass**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.dashboard.test.tsx && npm --workspace @piglog/web run typecheck && npm --workspace @piglog/web run build`
 
 Expected: PASS, no type errors, successful build.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/routes/_layout.dashboard.tsx apps/web/app/routes/_layout.dashboard.test.tsx
@@ -536,19 +536,19 @@ git commit -m "feat: add dashboard ingestion quick actions"
 - Modify: none
 - Test: route and build checks only
 
-- [ ] **Step 1: Run the full web test suite**
+- [x] **Step 1: Run the full web test suite**
 
 Run: `npm --workspace @piglog/web run test`
 
 Expected: PASS across sidebar, ingestion, and dashboard tests.
 
-- [ ] **Step 2: Run production verification**
+- [x] **Step 2: Run production verification**
 
 Run: `npm --workspace @piglog/web run typecheck && npm --workspace @piglog/web run build`
 
 Expected: PASS, no TypeScript errors, successful production build.
 
-- [ ] **Step 3: Commit the verification checkpoint**
+- [x] **Step 3: Commit the verification checkpoint**
 
 ```bash
 git add -A

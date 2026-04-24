@@ -73,7 +73,7 @@
 - Create: `apps/api/src/test/setup.ts`
 - Create: `apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
-- [ ] **Step 1: Write the failing connector smoke test**
+- [x] **Step 1: Write the failing connector smoke test**
 
 ```ts
 // apps/api/src/modules/integrations/connectors/nextdns.test.ts
@@ -86,13 +86,13 @@ describe('NextDNS connector harness', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails without Vitest**
+- [x] **Step 2: Run the test to verify it fails without Vitest**
 
 Run: `npm --workspace @piglog/api exec vitest run apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
 Expected: FAIL with missing dependency or missing config.
 
-- [ ] **Step 3: Add the minimal API test infrastructure**
+- [x] **Step 3: Add the minimal API test infrastructure**
 
 ```json
 // apps/api/package.json
@@ -130,13 +130,13 @@ export default defineConfig({
 process.env.NODE_ENV = 'test';
 ```
 
-- [ ] **Step 4: Run the test to verify the harness passes**
+- [x] **Step 4: Run the test to verify the harness passes**
 
 Run: `npm install && npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
 Expected: PASS with `1 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/package.json apps/api/vitest.config.ts apps/api/src/test/setup.ts apps/api/src/modules/integrations/connectors/nextdns.test.ts package-lock.json
@@ -150,7 +150,7 @@ git commit -m "test: add api vitest harness"
 - Create: `packages/db/migrations/0003_integrations.sql`
 - Test: `apps/api/src/modules/integrations/integrations.service.test.ts`
 
-- [ ] **Step 1: Write the failing service contract test**
+- [x] **Step 1: Write the failing service contract test**
 
 ```ts
 // apps/api/src/modules/integrations/integrations.service.test.ts
@@ -175,13 +175,13 @@ describe('integration persistence', () => {
 });
 ```
 
-- [ ] **Step 2: Run the API tests and verify the real persistence layer is still missing**
+- [x] **Step 2: Run the API tests and verify the real persistence layer is still missing**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/integrations.service.test.ts`
 
 Expected: PASS on the placeholder test, but note there is no persistence implementation yet. Replace the placeholder immediately in the next step.
 
-- [ ] **Step 3: Replace the placeholder test with schema-focused assertions and add the schema**
+- [x] **Step 3: Replace the placeholder test with schema-focused assertions and add the schema**
 
 ```ts
 // packages/db/src/schema.ts
@@ -246,13 +246,13 @@ CREATE UNIQUE INDEX integration_source_external_unique_idx
   ON integration_source(integration_id, external_id);
 ```
 
-- [ ] **Step 4: Run migration and build verification**
+- [x] **Step 4: Run migration and build verification**
 
 Run: `npm run db:migrate && npm --workspace @piglog/api run build`
 
 Expected: migrations apply successfully and the API TypeScript build passes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/db/src/schema.ts packages/db/migrations/0003_integrations.sql
@@ -270,7 +270,7 @@ git commit -m "feat: add integrations persistence schema"
 - Modify: `apps/api/src/app.ts`
 - Test: `apps/api/src/modules/integrations/integrations.service.test.ts`
 
-- [ ] **Step 1: Write the failing service test for child source creation**
+- [x] **Step 1: Write the failing service test for child source creation**
 
 ```ts
 // apps/api/src/modules/integrations/integrations.service.test.ts
@@ -288,13 +288,13 @@ describe('createIntegrationSources', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the service does not exist yet**
+- [x] **Step 2: Run the test and verify the service does not exist yet**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/integrations.service.test.ts`
 
 Expected: FAIL once the placeholder is replaced with a real import of the nonexistent service.
 
-- [ ] **Step 3: Implement the shared connector contract and service layer**
+- [x] **Step 3: Implement the shared connector contract and service layer**
 
 ```ts
 // apps/api/src/modules/integrations/connectors/types.ts
@@ -379,13 +379,13 @@ app.post('/', async (request, reply) => {
 });
 ```
 
-- [ ] **Step 4: Register the route in the app and verify**
+- [x] **Step 4: Register the route in the app and verify**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/integrations.service.test.ts && npm --workspace @piglog/api run build`
 
 Expected: PASS on service tests and successful API build.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/integrations apps/api/src/app.ts
@@ -400,7 +400,7 @@ git commit -m "feat: add integrations api and connector registry"
 - Create: `apps/api/src/workers/integration-sync.worker.ts`
 - Test: `apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
-- [ ] **Step 1: Write the failing NextDNS sync test**
+- [x] **Step 1: Write the failing NextDNS sync test**
 
 ```ts
 // apps/api/src/modules/integrations/connectors/nextdns.test.ts
@@ -419,13 +419,13 @@ describe('nextdns sync', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the connector sync function is not implemented yet**
+- [x] **Step 2: Run the test and verify the connector sync function is not implemented yet**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
 Expected: FAIL once the test imports the missing connector normalization function.
 
-- [ ] **Step 3: Add queue and worker plumbing**
+- [x] **Step 3: Add queue and worker plumbing**
 
 ```ts
 // apps/api/src/queues/index.ts
@@ -454,13 +454,13 @@ new Worker(
 );
 ```
 
-- [ ] **Step 4: Verify queue and worker wiring**
+- [x] **Step 4: Verify queue and worker wiring**
 
 Run: `npm --workspace @piglog/api run build`
 
 Expected: PASS with the new worker included in the compiled output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/queues/index.ts apps/api/src/workers/index.ts apps/api/src/workers/integration-sync.worker.ts
@@ -474,7 +474,7 @@ git commit -m "feat: add integration sync worker"
 - Modify: `apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 - Modify: `apps/api/src/modules/logs/logs.service.ts` (only if a small helper improves reuse)
 
-- [ ] **Step 1: Write the failing discovery and normalization tests**
+- [x] **Step 1: Write the failing discovery and normalization tests**
 
 ```ts
 // apps/api/src/modules/integrations/connectors/nextdns.test.ts
@@ -497,13 +497,13 @@ describe('mapNextDnsEventToPiglogLog', () => {
 });
 ```
 
-- [ ] **Step 2: Run the connector tests and verify they fail**
+- [x] **Step 2: Run the connector tests and verify they fail**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/connectors/nextdns.test.ts`
 
 Expected: FAIL because the mapper and connector do not exist yet.
 
-- [ ] **Step 3: Implement NextDNS discovery, backfill, and normalization**
+- [x] **Step 3: Implement NextDNS discovery, backfill, and normalization**
 
 ```ts
 // apps/api/src/modules/integrations/connectors/nextdns.ts
@@ -545,13 +545,13 @@ export const nextDnsConnector: IntegrationConnector = {
 };
 ```
 
-- [ ] **Step 4: Run connector tests and API build**
+- [x] **Step 4: Run connector tests and API build**
 
 Run: `npm --workspace @piglog/api run test -- apps/api/src/modules/integrations/connectors/nextdns.test.ts && npm --workspace @piglog/api run build`
 
 Expected: PASS, then successful build.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/integrations/connectors/nextdns.ts apps/api/src/modules/integrations/connectors/nextdns.test.ts
@@ -566,7 +566,7 @@ git commit -m "feat: add nextdns integration connector"
 - Create: `apps/web/app/components/integrations/nextdns-connect-form.tsx`
 - Create: `apps/web/app/routes/_layout.settings.integrations.test.tsx`
 
-- [ ] **Step 1: Write the failing UI test**
+- [x] **Step 1: Write the failing UI test**
 
 ```tsx
 // apps/web/app/routes/_layout.settings.integrations.test.tsx
@@ -585,13 +585,13 @@ describe('IntegrationsPage', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify it fails against the placeholder page**
+- [x] **Step 2: Run the test and verify it fails against the placeholder page**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.integrations.test.tsx`
 
 Expected: FAIL because the placeholder page does not have a real setup flow.
 
-- [ ] **Step 3: Implement the UI**
+- [x] **Step 3: Implement the UI**
 
 ```tsx
 // apps/web/app/components/integrations/nextdns-connect-form.tsx
@@ -638,13 +638,13 @@ export default function IntegrationsPage() {
 }
 ```
 
-- [ ] **Step 4: Run UI verification**
+- [x] **Step 4: Run UI verification**
 
 Run: `npm --workspace @piglog/web run test -- apps/web/app/routes/_layout.settings.integrations.test.tsx && npm --workspace @piglog/web run build`
 
 Expected: PASS and a successful production build.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/app/routes/_layout.settings.integrations.tsx apps/web/app/components/integrations apps/web/app/routes/_layout.settings.integrations.test.tsx
@@ -657,27 +657,95 @@ git commit -m "feat: add integrations setup ui"
 - Modify: none
 - Test: API, web, build, and migration verification
 
-- [ ] **Step 1: Verify the database and API**
+- [x] **Step 1: Verify the database and API**
 
 Run: `npm run db:migrate && npm --workspace @piglog/api run test && npm --workspace @piglog/api run build`
 
 Expected: PASS on migrations, API tests, and API build.
 
-- [ ] **Step 2: Verify the web app**
+- [x] **Step 2: Verify the web app**
 
 Run: `npm --workspace @piglog/web run test && npm --workspace @piglog/web run typecheck && npm --workspace @piglog/web run build`
 
 Expected: PASS on web tests, typecheck, and build.
 
-- [ ] **Step 3: Verify the local dev flow manually**
+- [x] **Step 3: Verify the local dev flow manually**
 
 Run: `npm run dev`
 
 Expected: web app loads, `Settings -> Ingestion -> Integrations` renders, NextDNS setup form appears, and API worker process can start without missing queue imports.
 
-- [ ] **Step 4: Commit the verification checkpoint**
+- [x] **Step 4: Commit the verification checkpoint**
 
 ```bash
 git add -A
 git commit -m "chore: verify integrations foundation and nextdns flow"
+```
+
+## Task 8: Post-Implementation Audit Fixes
+
+**Files:**
+- Modify: `apps/api/src/modules/integrations/integrations.service.ts`
+- Modify: `apps/api/src/modules/integrations/integrations.routes.ts`
+- Modify: `apps/api/src/modules/integrations/connectors/types.ts`
+- Modify: `apps/api/src/workers/index.ts`
+- Modify: `apps/api/src/workers/alert.worker.ts`
+- Modify: `apps/api/src/workers/webhook.worker.ts`
+- Modify: `apps/api/src/workers/integration-sync.worker.ts`
+- Modify: `apps/api/src/modules/sources/sources.service.ts`
+- Modify: `apps/web/app/routes/_layout.settings.sources.tsx`
+- Modify: `apps/web/app/routes/_layout.settings.integrations.tsx`
+- Modify: `apps/web/app/components/integrations/integration-list.tsx`
+- Modify: `apps/web/app/components/integrations/nextdns-connect-form.tsx`
+- Create: `packages/db/migrations/0004_integration_indexes.sql`
+
+- [x] **Step 1: Fix sync runtime crash** — `profileIds` array passed instead of `profileId` per-source. Pass `profileId: is.externalId` to `connector.sync()`.
+
+- [x] **Step 2: Add periodic sync scheduling** — Integration only syncs once on creation. Add repeatable BullMQ job (`{ repeat: { every: 5min } }`) keyed `sync-{integrationId}`.
+
+- [x] **Step 3: Persist sync cursors** — Each sync starts from scratch. Persist cursor per source ID in `config.syncState[sourceId]`.
+
+- [x] **Step 4: Add bounded backfill** — First sync fetches everything. Add `from` param to NextDNS API calls respecting `backfillHours` config.
+
+- [x] **Step 5: Lighter test-connection schema** — `testConnection` and `discover` require full `createIntegrationSchema`. Add `testConnectionSchema` (just `provider` + `secret`).
+
+- [x] **Step 6: Preselect discovered profiles** — Discover returns entities but form doesn't preselect. Auto-select all discovered profiles in the connect form.
+
+- [x] **Step 7: Mark integration-managed sources as internal** — Derive `isInternal` from `config.integrationManaged` in `listSources()`. Filter `isInternal` sources from Sources UI.
+
+- [x] **Step 8: Track updated_at on all status changes** — Every `UPDATE` on `integration` now includes `updatedAt: new Date()`.
+
+- [x] **Step 9: Add enable/disable endpoints and UI** — `PATCH /:id/enable` and `PATCH /:id/disable` in service + routes. Toggle button in IntegrationList.
+
+- [x] **Step 10: Replace alert()/confirm() in UI** — Inline error state in Sources page. Inline delete confirmation in IntegrationList.
+
+- [x] **Step 11: Add workspace_id index** — Migration 0004 creates `integration_workspace_idx` on `integration(workspace_id)`.
+
+- [x] **Step 12: Fix provider type** — `IntegrationConnector.provider` typed as `'nextdns'` literal. Changed to `string`.
+
+- [x] **Step 13: Add secret reveal behavior** — Eye/EyeOff toggle + copy button in IntegrationList. Secret stripped from API list response, exposed separately.
+
+- [x] **Step 14: Persist and display error messages** — Sync failures now store message in `config.errorMessage`. Exposed as `errorMessage` field in list response. Shown inline in IntegrationList.
+
+- [x] **Step 15: Graceful worker shutdown** — Export worker instances, call `worker.close()` on SIGTERM/SIGINT instead of `process.exit(0)`.
+
+- [x] **Step 16: Per-source health reporting** — Added `status` column to `integration_source` via migration 0005. Sync job now tracks per-source outcomes (SYNCING -> CONNECTED on success, ERROR on failure). Integration-level status is ERROR if any source errored. Sources exposed in list API response. UI shows expandable source health details with ChevronDown/ChevronRight toggle.
+
+- [x] **Step 17: Provider enum extensibility** — Adding new provider requires touching `integrationProviderEnum` PG enum. This is how PG enums work; no action needed for v1.
+
+- [x] **Step 18: Secret encryption at rest** — Secrets stored plaintext in DB. Spec explicitly defers this: "encryption at rest is a future hardening goal."
+
+## Task 9: End-To-End Verification (Post-Audit)
+
+- [x] **Step 1: Run full verification**
+
+Run: `npm --workspace @piglog/api run test && npm --workspace @piglog/web run test && npm run build:all`
+
+Expected: All tests pass, all builds succeed.
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add -A
+git commit -m "fix: post-implementation audit fixes for integrations"
 ```

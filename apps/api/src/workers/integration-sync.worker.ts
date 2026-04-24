@@ -2,7 +2,7 @@ import { Worker } from 'bullmq';
 import { integrationSyncQueue, redisConnection } from '../queues/index.js';
 import { runIntegrationSyncJob } from '../modules/integrations/integrations.service.js';
 
-new Worker(
+export const integrationSyncWorker = new Worker(
   'integration-sync',
   async (job) => {
     try {

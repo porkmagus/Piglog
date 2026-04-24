@@ -26,7 +26,13 @@ type Pages = {
   "/settings": {
     params: {};
   };
-  "/settings/alerts": {
+  "/settings/account": {
+    params: {};
+  };
+  "/settings/workspace": {
+    params: {};
+  };
+  "/settings/ingestion": {
     params: {};
   };
   "/settings/keys": {
@@ -35,13 +41,13 @@ type Pages = {
   "/settings/sources": {
     params: {};
   };
+  "/settings/integrations": {
+    params: {};
+  };
+  "/settings/alerts": {
+    params: {};
+  };
   "/settings/team": {
-    params: {};
-  };
-  "/settings/workspace": {
-    params: {};
-  };
-  "/settings/account": {
     params: {};
   };
   "/streams": {
@@ -57,7 +63,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/onboarding" | "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace" | "/settings/account" | "/streams" | "/streams/:streamId";
+    page: "/" | "/login" | "/onboarding" | "/dashboard" | "/settings" | "/settings/account" | "/settings/workspace" | "/settings/ingestion" | "/settings/keys" | "/settings/sources" | "/settings/integrations" | "/settings/alerts" | "/settings/team" | "/streams" | "/streams/:streamId";
   };
   "routes/_index.tsx": {
     id: "routes/_index";
@@ -73,7 +79,7 @@ type RouteFiles = {
   };
   "routes/_layout.tsx": {
     id: "routes/_layout";
-    page: "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace" | "/settings/account" | "/streams" | "/streams/:streamId";
+    page: "/dashboard" | "/settings" | "/settings/account" | "/settings/workspace" | "/settings/ingestion" | "/settings/keys" | "/settings/sources" | "/settings/integrations" | "/settings/alerts" | "/settings/team" | "/streams" | "/streams/:streamId";
   };
   "routes/_layout.dashboard.tsx": {
     id: "routes/_layout.dashboard";
@@ -81,15 +87,23 @@ type RouteFiles = {
   };
   "routes/_layout.settings.tsx": {
     id: "routes/_layout.settings";
-    page: "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace" | "/settings/account";
+    page: "/settings" | "/settings/account" | "/settings/workspace" | "/settings/ingestion" | "/settings/keys" | "/settings/sources" | "/settings/integrations" | "/settings/alerts" | "/settings/team";
   };
   "routes/_layout.settings._index.tsx": {
     id: "routes/_layout.settings._index";
     page: "/settings";
   };
-  "routes/_layout.settings.alerts.tsx": {
-    id: "routes/_layout.settings.alerts";
-    page: "/settings/alerts";
+  "routes/_layout.settings.account.tsx": {
+    id: "routes/_layout.settings.account";
+    page: "/settings/account";
+  };
+  "routes/_layout.settings.workspace.tsx": {
+    id: "routes/_layout.settings.workspace";
+    page: "/settings/workspace";
+  };
+  "routes/_layout.settings.ingestion.tsx": {
+    id: "routes/_layout.settings.ingestion";
+    page: "/settings/ingestion";
   };
   "routes/_layout.settings.keys.tsx": {
     id: "routes/_layout.settings.keys";
@@ -99,17 +113,17 @@ type RouteFiles = {
     id: "routes/_layout.settings.sources";
     page: "/settings/sources";
   };
+  "routes/_layout.settings.integrations.tsx": {
+    id: "routes/_layout.settings.integrations";
+    page: "/settings/integrations";
+  };
+  "routes/_layout.settings.alerts.tsx": {
+    id: "routes/_layout.settings.alerts";
+    page: "/settings/alerts";
+  };
   "routes/_layout.settings.team.tsx": {
     id: "routes/_layout.settings.team";
     page: "/settings/team";
-  };
-  "routes/_layout.settings.workspace.tsx": {
-    id: "routes/_layout.settings.workspace";
-    page: "/settings/workspace";
-  };
-  "routes/_layout.settings.account.tsx": {
-    id: "routes/_layout.settings.account";
-    page: "/settings/account";
   };
   "routes/_layout.streams._index.tsx": {
     id: "routes/_layout.streams._index";
@@ -130,12 +144,14 @@ type RouteModules = {
   "routes/_layout.dashboard": typeof import("./app/routes/_layout.dashboard.tsx");
   "routes/_layout.settings": typeof import("./app/routes/_layout.settings.tsx");
   "routes/_layout.settings._index": typeof import("./app/routes/_layout.settings._index.tsx");
-  "routes/_layout.settings.alerts": typeof import("./app/routes/_layout.settings.alerts.tsx");
+  "routes/_layout.settings.account": typeof import("./app/routes/_layout.settings.account.tsx");
+  "routes/_layout.settings.workspace": typeof import("./app/routes/_layout.settings.workspace.tsx");
+  "routes/_layout.settings.ingestion": typeof import("./app/routes/_layout.settings.ingestion.tsx");
   "routes/_layout.settings.keys": typeof import("./app/routes/_layout.settings.keys.tsx");
   "routes/_layout.settings.sources": typeof import("./app/routes/_layout.settings.sources.tsx");
+  "routes/_layout.settings.integrations": typeof import("./app/routes/_layout.settings.integrations.tsx");
+  "routes/_layout.settings.alerts": typeof import("./app/routes/_layout.settings.alerts.tsx");
   "routes/_layout.settings.team": typeof import("./app/routes/_layout.settings.team.tsx");
-  "routes/_layout.settings.workspace": typeof import("./app/routes/_layout.settings.workspace.tsx");
-  "routes/_layout.settings.account": typeof import("./app/routes/_layout.settings.account.tsx");
   "routes/_layout.streams._index": typeof import("./app/routes/_layout.streams._index.tsx");
   "routes/_layout.streams.$streamId": typeof import("./app/routes/_layout.streams.$streamId.tsx");
 };

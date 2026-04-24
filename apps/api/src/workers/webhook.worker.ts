@@ -71,3 +71,5 @@ webhookWorker.on('failed', (job, err) => {
 webhookWorker.on('error', (err) => {
   console.error('[webhook] Worker error:', err);
 });
+
+export { webhookWorker };

@@ -576,6 +576,7 @@ export const integrationSource = pgTable('integration_source', {
   externalId: text('external_id').notNull(),
   externalName: text('external_name').notNull(),
   isEnabled: boolean('is_enabled').notNull().default(true),
+  status: integrationStatusEnum('status').notNull().default('CONNECTED'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex('integration_source_external_unique_idx').on(table.integrationId, table.externalId),
