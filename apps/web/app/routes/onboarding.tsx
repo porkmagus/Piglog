@@ -4,15 +4,22 @@ import { useAuth } from '~/lib/auth-client';
 import { useWorkspace } from '~/lib/workspace';
 import { fetchApi } from '~/lib/api';
 
+interface CreatedWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function OnboardingPage() {
   const { user } = useAuth();
-  const { refreshWorkspaces } = useWorkspace();
+  const { setActiveWorkspace, refreshWorkspaces } = useWorkspace();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceSlug, setWorkspaceSlug] = useState('');
   const [sourceName, setSourceName] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [createdWorkspace, setCreatedWorkspace] = useState<CreatedWorkspace | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,6 +35,8 @@ export default function OnboardingPage() {
           slug: workspaceSlug || workspaceName.toLowerCase().replace(/\s+/g, '-'),
         }),
       });
+      setCreatedWorkspace(ws);
+      setActiveWorkspace({ ...ws, role: 'OWNER' });
       await refreshWorkspaces();
       setStep(2);
     } catch (err: any) {
@@ -42,15 +51,12 @@ export default function OnboardingPage() {
     setLoading(true);
     setError('');
     try {
-      // We need to get the workspace first
-      const workspaces = await fetchApi('/workspaces');
-      if (workspaces.length === 0) {
+      if (!createdWorkspace) {
         setError('No workspace found');
         setLoading(false);
         return;
       }
-      const ws = workspaces[0];
-      const source = await fetchApi(`/workspaces/${ws.id}/sources`, {
+      const source = await fetchApi(`/workspaces/${createdWorkspace.id}/sources`, {
         method: 'POST',
         body: JSON.stringify({ name: sourceName, type: 'http' }),
       });
