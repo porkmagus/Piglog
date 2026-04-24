@@ -3,6 +3,17 @@ export interface DiscoveredIntegrationEntity {
   name: string;
 }
 
+export interface StreamParams {
+  workspaceId: string;
+  integrationId: string;
+  sourceId: string;
+  config: Record<string, unknown>;
+  secret: string;
+  state: Record<string, unknown>;
+  onEvent: (nextState: Record<string, unknown>) => void;
+  onEnd: () => void;
+}
+
 export interface IntegrationConnector {
   provider: string;
   discoverEntities(config: Record<string, unknown>, secret: string): Promise<DiscoveredIntegrationEntity[]>;
@@ -15,4 +26,5 @@ export interface IntegrationConnector {
     secret: string;
     state: Record<string, unknown>;
   }): Promise<{ nextState: Record<string, unknown>; accepted: number }>;
+  stream?(params: StreamParams): () => void;
 }

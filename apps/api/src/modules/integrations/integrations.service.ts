@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { getConnector } from './connectors/index.js';
 import { integrationSyncQueue } from '../../queues/index.js';
 import type { CreateIntegrationInput } from './integrations.schemas.js';
+import { startStream, stopStream } from './stream.manager.js';
 
 const SYNC_INTERVAL_MS = 3 * 60 * 1000;
 
@@ -99,6 +100,9 @@ export async function createIntegrationWithSources(input: CreateIntegrationInput
 
   /* Run initial sync immediately */
   await integrationSyncQueue.add('sync', { integrationId }, { priority: 10, jobId: `init-sync-${integrationId}` });
+
+  /* Start real-time stream */
+  startStream(integrationId);
 
   const [created] = await db
     .select()
@@ -250,6 +254,7 @@ export async function enableIntegration(integrationId: string): Promise<void> {
     .where(eq(integrationSource.integrationId, integrationId));
 
   /* Re-schedule periodic sync */
+  startStream(integrationId);
   await integrationSyncQueue.add(
     'sync',
     { integrationId },
@@ -280,6 +285,9 @@ export async function disableIntegration(integrationId: string): Promise<void> {
     .set({ isEnabled: false })
     .where(eq(integrationSource.integrationId, integrationId));
 
+  /* Stop real-time stream */
+  stopStream(integrationId);
+
   /* Cancel scheduled sync */
   await integrationSyncQueue.removeRepeatableByKey(`sync-${integrationId}`);
 }
@@ -296,6 +304,9 @@ export async function deleteIntegration(integrationId: string): Promise<void> {
       .set({ deletedAt: new Date() })
       .where(eq(logSource.id, s.sourceId));
   }
+
+  /* Stop real-time stream */
+  stopStream(integrationId);
 
   /* Cancel scheduled sync */
   await integrationSyncQueue.removeRepeatableByKey(`sync-${integrationId}`);

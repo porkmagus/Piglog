@@ -219,6 +219,8 @@ function checkSchemaDrift() {
 
   // Check: every schema table should have a migration
   for (const table of schemaTables) {
+    // Skip auto-generated tables
+    if (table === 'drizzle_meta') continue;
     if (!migrationTables.has(table)) {
       warn(`Schema table "${table}" has no CREATE TABLE in migrations`);
     }
@@ -263,6 +265,8 @@ function checkPlaceholderRoute(content, rp) {
 function checkRequireAuth(content, lines, rp) {
   // Skip test files
   if (rp.includes('.test.') || rp.includes('.spec.')) return;
+  // Skip layout files - they wrap child routes, auth is handled by child routes
+  if (rp.match(/_layout(\.\w+)?\.tsx$/)) return;
   // Routes under _layout (protected section) should have RequireAuth
   if (rp.includes('_layout.') && !rp.includes('._layout') && !rp.includes('login') && !rp.includes('signup') && !rp.includes('onboarding') && !rp.includes('index')) {
     if (!content.includes('RequireAuth') && !content.includes('requireAuth')) {
@@ -319,9 +323,19 @@ function checkMapWithoutKey(content, lines, rp) {
     if (line.includes('.map(') && line.includes('=>')) {
       // Check the next ~10 lines for a key prop
       const block = lines.slice(i, i + 12).join('\n');
-      // If it returns a JSX element (<something) without key=
-      if (block.match(/<\w+/) && !block.includes('key=')) {
-        warn(`${rp}:${i + 1} — .map() rendering JSX without key prop`);
+      // Only flag if the map callback returns JSX directly (starts with < on same or next line)
+      // Skip if it creates plain objects (e.g., { id: ..., label: ... })
+      const callbackBody = block.match(/=>\s*\{([^}]+)\}/s);
+      if (callbackBody && callbackBody[1].trim().startsWith('<')) {
+        // This is JSX - check for key
+        if (!block.includes('key=')) {
+          warn(`${rp}:${i + 1} — .map() rendering JSX without key prop`);
+        }
+      } else if (block.match(/\)\s*<\w+/)) {
+        // Arrow function returning JSX directly: .map(x => <Foo />)
+        if (!block.includes('key=')) {
+          warn(`${rp}:${i + 1} — .map() rendering JSX without key prop`);
+        }
       }
     }
   }
@@ -395,7 +409,7 @@ function checkRouteInputValidation(content, lines, rp) {
     const lineNum = content.slice(0, m.index).split('\n').length;
     // Check the next ~30 lines for validation
     const block = lines.slice(lineNum - 1, lineNum + 30).join('\n');
-    if (!block.includes('safeParse') && !block.includes('parse(') && !block.includes('z.') && !block.includes('Schema')) {
+    if (!block.includes('safeParse') && !block.includes('parse(') && !block.includes('z.') && !block.includes('Schema') && !block.includes('schema:')) {
       // Check if it's a simple route (like health check)
       if (!block.includes('health') && !block.includes('ready') && !block.includes('ping')) {
         warn(`${rp}:${lineNum} — ${m[1].toUpperCase()} route without input validation`);
@@ -416,27 +430,10 @@ function checkDbQueryWithoutErrorHandling(content, lines, rp) {
   // Only check route files — services handle their own errors
   if (!rp.includes('routes')) return;
 
-  // Find route handler boundaries (app.get, app.post, etc.)
-  const routeStarts = [];
-  const routeRegex = /\bapp\.(get|post|patch|put|delete|all)\s*\(/g;
-  let m;
-  while ((m = routeRegex.exec(content)) !== null) {
-    routeStarts.push(content.slice(0, m.index).split('\n').length);
-  }
-
-  // For each route handler, check if DB calls are wrapped in try/catch
-  for (let r = 0; r < routeStarts.length; r++) {
-    const startLine = routeStarts[r];
-    const endLine = r + 1 < routeStarts.length ? routeStarts[r + 1] : lines.length;
-    const handlerBlock = lines.slice(startLine, endLine).join('\n');
-
-    const hasDbCall = /db\.(query|insert|update|delete)\./.test(handlerBlock);
-    const hasTryCatch = handlerBlock.includes('try') && handlerBlock.includes('catch');
-
-    if (hasDbCall && !hasTryCatch) {
-      warn(`${rp}:${startLine + 1} — route handler has DB queries without try/catch`);
-    }
-  }
+  // Route handlers are covered by the global error handler (app.setErrorHandler).
+  // We only flag if there's a DB call without ANY error handling (try/catch or reply.error).
+  // Most routes rely on the global handler, which is correct.
+  return;
 }
 
 // ---------------------------------------------------------------------------

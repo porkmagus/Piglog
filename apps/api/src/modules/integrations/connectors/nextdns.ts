@@ -1,6 +1,9 @@
-import type { IntegrationConnector, DiscoveredIntegrationEntity } from './types.js';
+import type { IntegrationConnector, DiscoveredIntegrationEntity, StreamParams } from './types.js';
 import { ingestLogs } from '../../logs/logs.service.js';
 import type { LogLevel } from '@piglog/db';
+import { createLogger } from '../../../lib/logger.js';
+
+const log = createLogger('nextdns-stream');
 
 interface NextDnsProfile {
   id: string;
@@ -128,6 +131,84 @@ export const nextDnsConnector: IntegrationConnector = {
         cursor: profileCursor || null,
       },
       accepted: totalAccepted,
+    };
+  },
+
+  stream(params: StreamParams): () => void {
+    const profileId = params.config.profileId as string;
+    if (!profileId) {
+      params.onEnd();
+      return () => {};
+    }
+
+    const controller = new AbortController();
+    let lastStreamId: string | null = (params.state.streamId as string) || null;
+
+    async function connect() {
+      const streamUrl = new URL(`https://api.nextdns.io/profiles/${profileId}/logs/stream`);
+      if (lastStreamId) {
+        streamUrl.searchParams.set('id', lastStreamId);
+      }
+
+      try {
+        const res = await fetch(streamUrl.toString(), {
+          headers: { 'X-Api-Key': params.secret },
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          log.error(`Stream connection failed: ${res.status} ${res.statusText}`);
+          reconnect();
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('id:')) {
+              lastStreamId = line.slice(3).trim();
+            } else if (line.startsWith('data:')) {
+              const data = line.slice(5).trim();
+              try {
+                const event = JSON.parse(data) as NextDnsLogEvent;
+                const mapped = mapNextDnsEventToPiglogLog(event);
+                await ingestLogs(params.workspaceId, params.sourceId, [mapped]);
+                params.onEvent({ ...params.state, streamId: lastStreamId });
+              } catch (err) {
+                log.error(`Failed to parse stream event: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        log.error(`Stream error: ${err instanceof Error ? err.message : String(err)}`);
+        reconnect();
+      }
+    }
+
+    function reconnect() {
+      const delay = 5000;
+      setTimeout(() => {
+        if (!controller.signal.aborted) connect();
+      }, delay);
+    }
+
+    connect();
+
+    return () => {
+      controller.abort();
+      params.onEnd();
     };
   },
 };

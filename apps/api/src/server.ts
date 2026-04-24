@@ -39,6 +39,8 @@ async function start() {
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       server.log.info(`Received ${signal}, shutting down gracefully...`);
+      const { stopAllStreams } = await import('./modules/integrations/stream.manager.js');
+      stopAllStreams();
       await server.close();
       await Promise.allSettled([
         alertWorker?.close(),
