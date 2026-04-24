@@ -15,6 +15,12 @@ import {
   alertRuleResponseSchema,
   analyticsOverviewResponseSchema,
   authOkResponseSchema,
+  dashboardLayoutResponseSchema,
+  dashboardSaveResponseSchema,
+  sqlQueryResponseSchema,
+  sourcesResponseSchema,
+  errorsResponseSchema,
+  alertsResponseSchema,
 } from './schemas/index.js';
 
 const RUNTIME = Date.now();
@@ -215,6 +221,67 @@ describe('API contracts', () => {
       const { status, body } = await api(`/workspaces/${workspaceId}/analytics/overview`);
       expect(status).toBe(200);
       expect(() => analyticsOverviewResponseSchema.parse(body)).not.toThrow();
+    });
+
+    it('GET /analytics/sources returns valid shape', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/analytics/sources`);
+      expect(status).toBe(200);
+      expect(() => sourcesResponseSchema.parse(body)).not.toThrow();
+    });
+
+    it('GET /analytics/errors returns valid shape', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/analytics/errors`);
+      expect(status).toBe(200);
+      expect(() => errorsResponseSchema.parse(body)).not.toThrow();
+    });
+
+    it('GET /analytics/alerts returns valid shape', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/analytics/alerts`);
+      expect(status).toBe(200);
+      expect(() => alertsResponseSchema.parse(body)).not.toThrow();
+    });
+
+    it('POST /analytics/query rejects dangerous keywords', async () => {
+      const { status } = await api(`/workspaces/${workspaceId}/analytics/query`, {
+        method: 'POST',
+        body: JSON.stringify({ sql: 'DROP TABLE log_entry', timeRange: '24h' }),
+      });
+      expect(status).toBe(400);
+    });
+
+    it('POST /analytics/query accepts valid SELECT', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/analytics/query`, {
+        method: 'POST',
+        body: JSON.stringify({ sql: 'SELECT level, count(*) FROM log_entry GROUP BY level', timeRange: '24h' }),
+      });
+      expect(status).toBe(200);
+      expect(() => sqlQueryResponseSchema.parse(body)).not.toThrow();
+    });
+  });
+
+  describe('dashboard', () => {
+    it('GET /dashboard/layout returns valid layout', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/dashboard/layout`);
+      expect(status).toBe(200);
+      expect(() => dashboardLayoutResponseSchema.parse(body)).not.toThrow();
+      expect((body as any).widgets).toBeInstanceOf(Array);
+    });
+
+    it('PUT /dashboard/layout saves and returns ok', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/dashboard/layout`, {
+        method: 'PUT',
+        body: JSON.stringify({ widgets: [], hiddenIds: [] }),
+      });
+      expect(status).toBe(200);
+      expect(() => dashboardSaveResponseSchema.parse(body)).not.toThrow();
+    });
+
+    it('DELETE /dashboard/layout removes personal layout', async () => {
+      const { status, body } = await api(`/workspaces/${workspaceId}/dashboard/layout`, {
+        method: 'DELETE',
+      });
+      expect(status).toBe(200);
+      expect(() => dashboardSaveResponseSchema.parse(body)).not.toThrow();
     });
   });
 });

@@ -5,3 +5,4 @@ export * from './integrations.js';
 export * from './alerts.js';
 export * from './analytics.js';
 export * from './auth.js';
+export * from './dashboard.js';
