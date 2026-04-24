@@ -13,7 +13,7 @@ import {
   bigint,
   primaryKey,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // ============================================================
 // Enums
@@ -548,4 +548,45 @@ export const alertRuleRelations = relations(alertRule, ({ one, many }) => ({
 export const alertEventRelations = relations(alertEvent, ({ one }) => ({
   rule: one(alertRule, { fields: [alertEvent.alertRuleId], references: [alertRule.id] }),
   workspace: one(workspace, { fields: [alertEvent.workspaceId], references: [workspace.id] }),
+}));
+
+// ============================================================
+// Integrations
+// ============================================================
+export const integrationProviderEnum = pgEnum('integration_provider', ['nextdns']);
+export const integrationStatusEnum = pgEnum('integration_status', ['PENDING', 'CONNECTED', 'SYNCING', 'ERROR', 'DISABLED']);
+
+export const integration = pgTable('integration', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id').notNull().references(() => workspace.id, { onDelete: 'cascade' }),
+  provider: integrationProviderEnum('provider').notNull(),
+  name: text('name').notNull(),
+  status: integrationStatusEnum('status').notNull().default('PENDING'),
+  config: jsonb('config').notNull().default(sql`'{}'::jsonb`),
+  secret: text('secret'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const integrationSource = pgTable('integration_source', {
+  id: text('id').primaryKey(),
+  integrationId: text('integration_id').notNull().references(() => integration.id, { onDelete: 'cascade' }),
+  sourceId: text('source_id').notNull().references(() => logSource.id, { onDelete: 'cascade' }),
+  externalId: text('external_id').notNull(),
+  externalName: text('external_name').notNull(),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('integration_source_external_unique_idx').on(table.integrationId, table.externalId),
+]);
+
+export const integrationRelations = relations(integration, ({ one, many }) => ({
+  workspace: one(workspace, { fields: [integration.workspaceId], references: [workspace.id] }),
+  sources: many(integrationSource),
+}));
+
+export const integrationSourceRelations = relations(integrationSource, ({ one }) => ({
+  integration: one(integration, { fields: [integrationSource.integrationId], references: [integration.id] }),
+  source: one(logSource, { fields: [integrationSource.sourceId], references: [logSource.id] }),
 }));
