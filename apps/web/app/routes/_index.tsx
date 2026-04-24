@@ -84,7 +84,7 @@ export default function LandingPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
-              href="https://github.com/sean/piglog"
+              href="https://github.com/porkmagus/piglog"
               className="inline-flex items-center gap-2 rounded-md border border-[#2A2A2A] bg-[#111111] px-5 py-2.5 text-sm font-medium text-gray-300 hover:bg-[#151515] transition-colors"
             >
               <Terminal className="h-4 w-4" />

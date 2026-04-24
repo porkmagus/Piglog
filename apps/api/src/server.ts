@@ -29,6 +29,16 @@ async function start() {
     await server.listen({ port: PORT, host: HOST });
 
     server.log.info(`API server running on http://${HOST}:${PORT}`);
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      server.log.info(`Received ${signal}, shutting down gracefully...`);
+      await server.close();
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

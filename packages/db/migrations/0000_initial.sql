@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS "workspace" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   "deleted_at" timestamptz
 );
-CREATE INDEX IF NOT EXISTS "workspace_slug_idx" ON "workspace"("slug");
+-- slug already has UNIQUE constraint (implicit index), no need for extra index
 CREATE INDEX IF NOT EXISTS "workspace_owner_idx" ON "workspace"("owner_id");
 
 CREATE TABLE IF NOT EXISTS "workspace_member" (
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS "workspace_member" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   "deleted_at" timestamptz
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "workspace_member_unique_idx" ON "workspace_member"("workspace_id", "user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "workspace_member_unique_idx" ON "workspace_member"("workspace_id", "user_id") WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS "workspace_member_workspace_idx" ON "workspace_member"("workspace_id");
 CREATE INDEX IF NOT EXISTS "workspace_member_user_idx" ON "workspace_member"("user_id");
 
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS "group_member" (
   "added_by_id" text REFERENCES "user"("id"),
   "added_at" timestamptz NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "group_member_unique_idx" ON "group_member"("group_id", "user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "group_member_unique_idx" ON "group_member"("group_id", "user_id") WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS "group_member_group_idx" ON "group_member"("group_id");
 CREATE INDEX IF NOT EXISTS "group_member_user_idx" ON "group_member"("user_id");
 
@@ -322,6 +322,8 @@ CREATE TABLE IF NOT EXISTS "log_entry" (
 CREATE INDEX IF NOT EXISTS "log_entry_timestamp_idx" ON "log_entry"("timestamp");
 CREATE INDEX IF NOT EXISTS "log_entry_workspace_service_level_idx" ON "log_entry"("workspace_id", "service", "level");
 CREATE INDEX IF NOT EXISTS "log_entry_trace_idx" ON "log_entry"("trace_id");
+CREATE INDEX IF NOT EXISTS "log_entry_workspace_timestamp_idx" ON "log_entry"("workspace_id", "timestamp" DESC);
+CREATE INDEX IF NOT EXISTS "log_entry_source_timestamp_idx" ON "log_entry"("source_id", "timestamp" DESC);
 
 CREATE TABLE IF NOT EXISTS "alert_rule" (
   "id" text PRIMARY KEY,
@@ -370,11 +372,33 @@ CREATE INDEX IF NOT EXISTS "dashboard_workspace_idx" ON "dashboard"("workspace_i
 -- ============================================================
 SELECT create_hypertable('log_entry', by_range('timestamp', INTERVAL '1 day'), if_not_exists => TRUE);
 
-ALTER TABLE log_entry SET (
-  timescaledb.compress,
-  timescaledb.compress_segmentby = 'workspace_id, service, level',
-  timescaledb.compress_orderby = 'timestamp DESC'
-);
+-- Compression settings require TimescaleDB Community/Enterprise in some versions.
+DO $$
+BEGIN
+  ALTER TABLE log_entry SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'workspace_id, service, level',
+    timescaledb.compress_orderby = 'timestamp DESC'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not enable compression: %', SQLERRM;
+END
+$$;
 
-SELECT add_compression_policy('log_entry', INTERVAL '7 days', if_not_exists => TRUE);
-SELECT add_retention_policy('log_entry', INTERVAL '90 days', if_not_exists => TRUE);
+-- Compression policy requires TimescaleDB Community/Enterprise.
+DO $$
+BEGIN
+  EXECUTE $Q$SELECT add_compression_policy('log_entry', INTERVAL '7 days', if_not_exists => TRUE)$Q$;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not add compression policy: %', SQLERRM;
+END
+$$;
+
+-- Retention policy requires TimescaleDB Community/Enterprise.
+DO $$
+BEGIN
+  EXECUTE $Q$SELECT add_retention_policy('log_entry', INTERVAL '90 days', if_not_exists => TRUE)$Q$;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not add retention policy: %', SQLERRM;
+END
+$$;

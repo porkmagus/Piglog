@@ -29,8 +29,10 @@ piglog/
 ### 1. Environment
 
 ```bash
-cp .env.example .env.dev
+cp .env.dev.example .env.dev
 ```
+
+`.env.dev` is gitignored and contains local-only credentials. It's already pre-filled with sensible defaults for localhost development.
 
 ### 2. Infrastructure
 
@@ -38,7 +40,7 @@ cp .env.example .env.dev
 npm run dev:infra
 ```
 
-This starts TimescaleDB and Redis in Docker.
+This starts TimescaleDB (`pg18-oss`) and Redis in Docker with persistent volumes.
 
 ### 3. Database Setup
 
@@ -47,18 +49,24 @@ npm install
 npm run db:migrate
 ```
 
+This runs all `.sql` migrations in order and tracks them in a `_migrations` table.
+
 ### 4. Run Dev Servers
 
+You'll need 3 terminal sessions:
+
 ```bash
-# Terminal 1 - API
+# Terminal 1 - API (port 3001)
 npm run dev:api
 
-# Terminal 2 - Worker
+# Terminal 2 - Background workers (alerts, webhooks)
 npm run dev:worker
 
-# Terminal 3 - Web
+# Terminal 3 - Web dev server (port 5173)
 npm run dev:web
 ```
+
+The API and workers automatically load `.env.dev` via dotenv. The web app proxies `/api` requests to `localhost:3001` and falls back to the same URL for API calls.
 
 ## Architecture
 

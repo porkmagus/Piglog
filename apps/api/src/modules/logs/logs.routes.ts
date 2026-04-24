@@ -5,7 +5,10 @@ import { logSource, logLevelEnum } from '@piglog/db';
 import { parseSearchTokens } from '@piglog/contracts';
 import { redisConnection, alertEvaluatorQueue } from '../../queues/index.js';
 import liveLogRoutes from './logs.live.routes.js';
+import splunkHecRoutes from './logs.splunk.routes.js';
 import { ingestLogs, queryLogs } from './logs.service.js';
+
+const MAX_BATCH_SIZE = 1000;
 
 const ingestSchema = z.object({
   logs: z.array(z.object({
@@ -16,7 +19,7 @@ const ingestSchema = z.object({
     message: z.string().min(1),
     metadata: z.record(z.string(), z.unknown()).optional(),
     traceId: z.string().max(255).optional(),
-  })),
+  })).max(MAX_BATCH_SIZE, `Batch size cannot exceed ${MAX_BATCH_SIZE} logs`),
 });
 
 const querySchema = z.object({
@@ -74,8 +77,6 @@ export default async function logRoutes(app: FastifyInstance) {
           service,
           level,
           windowMinutes: 5,
-        }, {
-          jobId: `${source.workspaceId}:${service}:${level}:${Math.floor(Date.now() / 60000)}`,
         });
       }
     }
@@ -83,7 +84,8 @@ export default async function logRoutes(app: FastifyInstance) {
     return reply.status(202).send(result);
   });
 
-  await app.register(liveLogRoutes, { prefix: '/live' });
+  await app.register(liveLogRoutes);
+  await app.register(splunkHecRoutes, { prefix: '/services/collector' });
 
   // Protected query endpoint
   app.get('/query', async (request, reply) => {

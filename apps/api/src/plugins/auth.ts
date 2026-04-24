@@ -109,7 +109,7 @@ export const authPlugin = fp(async (fastify: FastifyInstance) => {
 
 export async function requireAuth(request: AuthenticatedRequest, reply: FastifyReply) {
   if (!request.user) {
-    reply.status(401).send({
+    return reply.status(401).send({
       error: 'Unauthorized',
       message: 'You must be logged in to access this resource',
     });

@@ -88,9 +88,10 @@ export async function getLogMetrics(
   to: Date,
   bucketMinutes = 1
 ) {
+  const safeBucketMinutes = Math.max(1, Math.min(bucketMinutes, 1440));
   const result = await db.execute(sql`
     SELECT
-      time_bucket(${sql.raw(`INTERVAL '${bucketMinutes} minutes'`)} , ${logEntry.timestamp}) AS bucket,
+      time_bucket(INTERVAL '1 minute' * ${safeBucketMinutes}, ${logEntry.timestamp}) AS bucket,
       ${logEntry.level},
       ${logEntry.service},
       count(*)::int AS count

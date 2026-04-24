@@ -393,7 +393,7 @@ export const logStream = pgTable('log_stream', {
 
 // This table becomes a TimescaleDB hypertable via raw migration
 export const logEntry = pgTable('log_entry', {
-  id: bigint('id', { mode: 'number' }).generatedAlwaysAsIdentity().primaryKey(),
+  id: bigint('id', { mode: 'number' }).generatedAlwaysAsIdentity(),
   timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
   workspaceId: text('workspace_id')
     .notNull()
@@ -408,9 +408,12 @@ export const logEntry = pgTable('log_entry', {
   metadata: jsonb('metadata'),
   traceId: text('trace_id'),
 }, (table) => [
+  primaryKey({ columns: [table.id, table.timestamp] }),
   index('log_entry_timestamp_idx').on(table.timestamp),
   index('log_entry_workspace_service_level_idx').on(table.workspaceId, table.service, table.level),
   index('log_entry_trace_idx').on(table.traceId),
+  index('log_entry_workspace_timestamp_idx').on(table.workspaceId, table.timestamp),
+  index('log_entry_source_timestamp_idx').on(table.sourceId, table.timestamp),
 ]);
 
 export const alertRule = pgTable('alert_rule', {
@@ -433,6 +436,26 @@ export const alertRule = pgTable('alert_rule', {
 }, (table) => [
   index('alert_rule_workspace_idx').on(table.workspaceId),
   index('alert_rule_status_idx').on(table.status),
+]);
+
+export const alertEvent = pgTable('alert_event', {
+  id: text('id').primaryKey(),
+  alertRuleId: text('alert_rule_id')
+    .notNull()
+    .references(() => alertRule.id, { onDelete: 'cascade' }),
+  workspaceId: text('workspace_id')
+    .notNull()
+    .references(() => workspace.id, { onDelete: 'cascade' }),
+  actualCount: integer('actual_count').notNull(),
+  threshold: integer('threshold').notNull(),
+  operator: alertRuleOperatorEnum('operator').notNull(),
+  status: text('status').notNull().default('FIRED'), // FIRED | RESOLVED
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('alert_event_rule_idx').on(table.alertRuleId),
+  index('alert_event_workspace_idx').on(table.workspaceId),
+  index('alert_event_created_idx').on(table.createdAt),
 ]);
 
 export const savedQuery = pgTable('saved_query', {
@@ -491,6 +514,7 @@ export const workspaceRelations = relations(workspace, ({ one, many }) => ({
   logStreams: many(logStream),
   logEntries: many(logEntry),
   alertRules: many(alertRule),
+  alertEvents: many(alertEvent),
   savedQueries: many(savedQuery),
   dashboards: many(dashboard),
 }));
@@ -498,6 +522,11 @@ export const workspaceRelations = relations(workspace, ({ one, many }) => ({
 export const workspaceMemberRelations = relations(workspaceMember, ({ one }) => ({
   workspace: one(workspace, { fields: [workspaceMember.workspaceId], references: [workspace.id] }),
   user: one(user, { fields: [workspaceMember.userId], references: [user.id] }),
+}));
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  workspace: one(workspace, { fields: [invitation.workspaceId], references: [workspace.id] }),
+  invitedBy: one(user, { fields: [invitation.invitedById], references: [user.id] }),
 }));
 
 export const logSourceRelations = relations(logSource, ({ one, many }) => ({
@@ -509,4 +538,14 @@ export const logSourceRelations = relations(logSource, ({ one, many }) => ({
 export const logEntryRelations = relations(logEntry, ({ one }) => ({
   workspace: one(workspace, { fields: [logEntry.workspaceId], references: [workspace.id] }),
   source: one(logSource, { fields: [logEntry.sourceId], references: [logSource.id] }),
+}));
+
+export const alertRuleRelations = relations(alertRule, ({ one, many }) => ({
+  workspace: one(workspace, { fields: [alertRule.workspaceId], references: [workspace.id] }),
+  events: many(alertEvent),
+}));
+
+export const alertEventRelations = relations(alertEvent, ({ one }) => ({
+  rule: one(alertRule, { fields: [alertEvent.alertRuleId], references: [alertRule.id] }),
+  workspace: one(workspace, { fields: [alertEvent.workspaceId], references: [workspace.id] }),
 }));

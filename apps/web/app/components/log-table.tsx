@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useWorkspace } from '~/lib/workspace';
 import { useLiveLogs } from '~/hooks/use-live-logs';
 import { fetchApi } from '~/lib/api';
+import type { TimeRange } from './time-range-picker';
 
 interface LogEntry {
   id: number;
@@ -37,9 +38,10 @@ const ROW_HEIGHT = 32;
 
 interface LogTableProps {
   searchQuery?: string;
+  timeRange?: TimeRange | null;
 }
 
-export default function LogTable({ searchQuery = '' }: LogTableProps) {
+export default function LogTable({ searchQuery = '', timeRange }: LogTableProps) {
   const { activeWorkspace } = useWorkspace();
   const [historicalLogs, setHistoricalLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +51,15 @@ export default function LogTable({ searchQuery = '' }: LogTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const isUserScrolled = useRef(false);
 
+  // Parse search tokens for live log filtering
+  const liveService = searchQuery?.includes('service:') ? searchQuery.match(/service:(\S+)/)?.[1] : undefined;
+  const liveLevel = searchQuery?.includes('level:') ? searchQuery.match(/level:(\S+)/)?.[1] : undefined;
+
   const { logs: liveLogs, connected, paused, setPaused } = useLiveLogs({
     workspaceId: activeWorkspace?.id || null,
+    sourceId: undefined,
+    service: liveService,
+    level: liveLevel,
     enabled: liveMode,
   });
 
@@ -72,6 +81,10 @@ export default function LogTable({ searchQuery = '' }: LogTableProps) {
         limit: '500',
       });
       if (searchQuery) params.set('search', searchQuery);
+      if (timeRange) {
+        params.set('from', timeRange.from.toISOString());
+        params.set('to', timeRange.to.toISOString());
+      }
 
       const data = await fetchApi(`/logs/query?${params.toString()}`);
       setHistoricalLogs(data);
@@ -88,7 +101,7 @@ export default function LogTable({ searchQuery = '' }: LogTableProps) {
 
   useEffect(() => {
     loadLogs();
-  }, [activeWorkspace, searchQuery]);
+  }, [activeWorkspace, searchQuery, timeRange]);
 
   // Auto-scroll in live mode
   useEffect(() => {
@@ -117,6 +130,10 @@ export default function LogTable({ searchQuery = '' }: LogTableProps) {
   // Keyboard navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      if (isTyping) return;
+
       if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((prev) => {
@@ -139,8 +156,15 @@ export default function LogTable({ searchQuery = '' }: LogTableProps) {
         }
       } else if (e.key === 'Escape') {
         setExpandedId(null);
-      } else if (e.key === 't') {
+      } else if (e.key === 't' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
         setLiveMode((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !e.shiftKey) {
+        if (selectedIndex >= 0 && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          const log = logs[selectedIndex];
+          navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+        }
       }
     }
 

@@ -12,6 +12,7 @@ export default [
       route("keys", "routes/_layout.settings.keys.tsx"),
       route("sources", "routes/_layout.settings.sources.tsx"),
       route("team", "routes/_layout.settings.team.tsx"),
+      route("workspace", "routes/_layout.settings.workspace.tsx"),
     ]),
     route("streams", "routes/_layout.streams._index.tsx"),
     route("streams/:streamId", "routes/_layout.streams.$streamId.tsx"),

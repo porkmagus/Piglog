@@ -15,6 +15,8 @@ import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import alertRoutes from './modules/alerts/alerts.routes.js';
 import { redisConnection } from './queues/index.js';
 import { getTrustedOrigins } from './lib/env.js';
+import { startSyslogServer } from './lib/syslog-server.js';
+import { startSnmpServer } from './lib/snmp-server.js';
 
 export async function app(fastify: FastifyInstance) {
   const trustedOrigins = getTrustedOrigins();
@@ -38,15 +40,16 @@ export async function app(fastify: FastifyInstance) {
   });
 
   await fastify.register(drizzlePlugin);
-  await fastify.register(authPlugin);
   await fastify.register(workspaceContextPlugin);
 
-  // Public routes
+  // Public routes — register custom auth routes BEFORE better-auth catch-all
   await fastify.register(async function publicRoutes(app) {
     await app.register(healthRoutes, { prefix: '/health' });
     await app.register(authRoutes, { prefix: '/auth' });
     await app.register(logRoutes, { prefix: '/logs' });
   });
+
+  await fastify.register(authPlugin);
 
   // Protected routes
   await fastify.register(async function protectedRoutes(app) {
@@ -67,8 +70,8 @@ export async function app(fastify: FastifyInstance) {
             image: session.user.image || null,
           };
         }
-      } catch {
-        // Not authenticated
+      } catch (err) {
+        app.log.debug({ err }, 'Auth session extraction failed');
       }
     });
 
@@ -78,4 +81,10 @@ export async function app(fastify: FastifyInstance) {
     await app.register(analyticsRoutes, { prefix: '/workspaces/:workspaceId/analytics' });
     await app.register(alertRoutes, { prefix: '/workspaces/:workspaceId/alerts' });
   });
+
+  // Start syslog listener (outside Fastify HTTP stack)
+  await startSyslogServer();
+
+  // Start SNMP trap listener
+  await startSnmpServer();
 }

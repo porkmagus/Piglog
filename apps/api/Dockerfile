@@ -10,6 +10,7 @@ COPY . .
 RUN npm run build --workspace=@piglog/contracts && \
     npm run build --workspace=@piglog/db && \
     npm run build --workspace=@piglog/api
+RUN node scripts/prepare-packages.mjs
 
 # Production stage
 FROM node:24-alpine AS runner
@@ -25,6 +26,8 @@ COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/migrations ./packages/db/migrations
 COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 EXPOSE 3001
+EXPOSE 5140/udp
+EXPOSE 5141/tcp
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:3001/health/ready', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 CMD ["sh", "-c", "node packages/db/dist/migrate.js && node apps/api/dist/server.js"]

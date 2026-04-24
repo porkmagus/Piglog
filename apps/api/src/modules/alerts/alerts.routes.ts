@@ -9,6 +9,8 @@ import {
   getAlertRule,
   updateAlertRule,
   deleteAlertRule,
+  listAlertEvents,
+  listAlertEventsForRule,
 } from './alerts.service.js';
 
 const createSchema = z.object({
@@ -56,6 +58,14 @@ export default async function alertRoutes(app: FastifyInstance) {
     return reply.status(201).send(rule);
   });
 
+  app.get('/history', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const events = await listAlertEvents(request.workspace!.id);
+    return events;
+  });
+
   app.get('/:ruleId', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
@@ -88,5 +98,14 @@ export default async function alertRoutes(app: FastifyInstance) {
     const { ruleId } = request.params as { ruleId: string };
     await deleteAlertRule(request.workspace!.id, ruleId);
     return reply.status(204).send();
+  });
+
+  app.get('/:ruleId/history', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const { ruleId } = request.params as { ruleId: string };
+    const events = await listAlertEventsForRule(request.workspace!.id, ruleId);
+    return events;
   });
 }

@@ -25,7 +25,13 @@ export function useLiveLogs({ workspaceId, sourceId, service, level, enabled = f
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [connected, setConnected] = useState(false);
   const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(paused);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Keep ref in sync so onmessage closure always sees latest value
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
@@ -60,7 +66,7 @@ export function useLiveLogs({ workspaceId, sourceId, service, level, enabled = f
       if (!event.data || event.data.startsWith(':heartbeat')) return;
       try {
         const log: LogEntry = JSON.parse(event.data);
-        if (!paused) {
+        if (!pausedRef.current) {
           setLogs((prev) => {
             const next = [log, ...prev];
             return next.slice(0, 10000); // Keep max 10k live logs
@@ -73,6 +79,7 @@ export function useLiveLogs({ workspaceId, sourceId, service, level, enabled = f
 
     es.onerror = () => {
       setConnected(false);
+      // Reconnect is handled automatically by EventSource with exponential backoff
     };
 
     return () => {

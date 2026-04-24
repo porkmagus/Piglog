@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { RequireAuth } from '~/lib/auth-client';
 import { useWorkspace } from '~/lib/workspace';
 import { fetchApi } from '~/lib/api';
-import { Plus, Copy, Trash2, RefreshCw, Radio, FileUp, Globe } from 'lucide-react';
+import { Plus, Copy, Trash2, RefreshCw, Radio, FileUp, Globe, Network } from 'lucide-react';
 
 interface Source {
   id: string;
@@ -15,7 +15,7 @@ interface Source {
 }
 
 function TypeIcon({ type }: { type: string }) {
-  if (type === 'syslog') return <Radio className="w-4 h-4" />;
+  if (type === 'syslog' || type === 'snmp') return <Radio className="w-4 h-4" />;
   if (type === 'filebeat' || type === 'vector') return <FileUp className="w-4 h-4" />;
   return <Globe className="w-4 h-4" />;
 }
@@ -27,6 +27,15 @@ export default function SourcesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('http');
+  const [snmpConfig, setSnmpConfig] = useState({
+    version: 'v2c',
+    community: 'public',
+    username: '',
+    authProtocol: 'SHA',
+    authPassphrase: '',
+    privacyProtocol: 'AES',
+    privacyPassphrase: '',
+  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,10 +58,25 @@ export default function SourcesPage() {
   async function createSource(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim() || !activeWorkspace) return;
+    const body: Record<string, unknown> = { name: newName, type: newType };
+    if (newType === 'snmp') {
+      body.config = {
+        version: snmpConfig.version,
+        ...(snmpConfig.version === 'v1' || snmpConfig.version === 'v2c'
+          ? { community: snmpConfig.community }
+          : {
+              username: snmpConfig.username,
+              authProtocol: snmpConfig.authProtocol,
+              authPassphrase: snmpConfig.authPassphrase,
+              privacyProtocol: snmpConfig.privacyProtocol,
+              privacyPassphrase: snmpConfig.privacyPassphrase,
+            }),
+      };
+    }
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/sources`, {
         method: 'POST',
-        body: JSON.stringify({ name: newName, type: newType }),
+        body: JSON.stringify(body),
       });
       setNewName('');
       setShowCreate(false);
@@ -133,9 +157,93 @@ export default function SourcesPage() {
                   <option value="syslog">Syslog</option>
                   <option value="vector">Vector</option>
                   <option value="filebeat">Filebeat</option>
+                  <option value="snmp">SNMP Trap</option>
                 </select>
               </div>
             </div>
+            {newType === 'snmp' && (
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">SNMP Version</label>
+                  <select
+                    value={snmpConfig.version}
+                    onChange={(e) => setSnmpConfig({ ...snmpConfig, version: e.target.value })}
+                    className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                  >
+                    <option value="v1">v1</option>
+                    <option value="v2c">v2c</option>
+                    <option value="v3">v3</option>
+                  </select>
+                </div>
+                {(snmpConfig.version === 'v1' || snmpConfig.version === 'v2c') ? (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Community</label>
+                    <input
+                      value={snmpConfig.community}
+                      onChange={(e) => setSnmpConfig({ ...snmpConfig, community: e.target.value })}
+                      placeholder="public"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Username</label>
+                    <input
+                      value={snmpConfig.username}
+                      onChange={(e) => setSnmpConfig({ ...snmpConfig, username: e.target.value })}
+                      placeholder="SNMP user"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                    />
+                  </div>
+                )}
+                {snmpConfig.version === 'v3' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Auth Protocol</label>
+                      <select
+                        value={snmpConfig.authProtocol}
+                        onChange={(e) => setSnmpConfig({ ...snmpConfig, authProtocol: e.target.value })}
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      >
+                        <option value="SHA">SHA</option>
+                        <option value="MD5">MD5</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Auth Passphrase</label>
+                      <input
+                        type="password"
+                        value={snmpConfig.authPassphrase}
+                        onChange={(e) => setSnmpConfig({ ...snmpConfig, authPassphrase: e.target.value })}
+                        placeholder="••••••••"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Privacy Protocol</label>
+                      <select
+                        value={snmpConfig.privacyProtocol}
+                        onChange={(e) => setSnmpConfig({ ...snmpConfig, privacyProtocol: e.target.value })}
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      >
+                        <option value="AES">AES</option>
+                        <option value="DES">DES</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Privacy Passphrase</label>
+                      <input
+                        type="password"
+                        value={snmpConfig.privacyPassphrase}
+                        onChange={(e) => setSnmpConfig({ ...snmpConfig, privacyPassphrase: e.target.value })}
+                        placeholder="••••••••"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <button
                 type="submit"

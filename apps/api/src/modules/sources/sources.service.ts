@@ -1,4 +1,4 @@
-import { eq, and, isNull, count, sql, inArray } from 'drizzle-orm';
+import { eq, and, isNull, count, sql, inArray, gte } from 'drizzle-orm';
 import { db, logSource, logEntry } from '@piglog/db';
 import crypto from 'node:crypto';
 
@@ -33,6 +33,7 @@ export async function listSources(workspaceId: string) {
   const sourceIds = sources.map((s) => s.id);
   if (sourceIds.length === 0) return [];
 
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const stats = await db
     .select({
       sourceId: logEntry.sourceId,
@@ -40,7 +41,7 @@ export async function listSources(workspaceId: string) {
       latest: sql<Date>`max(${logEntry.timestamp})`,
     })
     .from(logEntry)
-    .where(inArray(logEntry.sourceId, sourceIds))
+    .where(and(inArray(logEntry.sourceId, sourceIds), gte(logEntry.timestamp, dayAgo)))
     .groupBy(logEntry.sourceId);
 
   const statsMap = new Map(stats.map((s) => [s.sourceId, s]));

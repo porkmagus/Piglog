@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router';
 
 export default function SettingsIndex() {
-  return <Navigate to="/settings/sources" replace />;
+  return <Navigate to="/settings/workspace" replace />;
 }

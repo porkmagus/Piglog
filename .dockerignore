@@ -1,0 +1,15 @@
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+apps/*/dist
+packages/*/dist
+apps/web/build
+.env.dev
+.env.prod
+.git
+.vscode
+*.log
+Dockerfile*
+docker-compose*
+compose*.yml
+.kimi

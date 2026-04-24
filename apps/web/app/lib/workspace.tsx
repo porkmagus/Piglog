@@ -6,6 +6,8 @@ interface Workspace {
   name: string;
   slug: string;
   role: string;
+  color?: string;
+  inviteCode?: string;
 }
 
 interface WorkspaceContextType {

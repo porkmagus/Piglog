@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router';
-import { Radio, Upload, Bell, Users, KeyRound } from 'lucide-react';
+import { Radio, Bell, Users, KeyRound, Settings } from 'lucide-react';
 
 const navItems = [
+  { to: '/settings/workspace', label: 'Workspace', icon: Settings },
   { to: '/settings/sources', label: 'Sources', icon: Radio },
   { to: '/settings/alerts', label: 'Alerts', icon: Bell },
   { to: '/settings/team', label: 'Team', icon: Users },

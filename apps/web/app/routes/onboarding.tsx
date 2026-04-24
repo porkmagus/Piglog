@@ -150,7 +150,7 @@ export default function OnboardingPage() {
               <div>
                 <div className="text-xs text-[#8A8F98] mb-1">Test with curl</div>
                 <pre className="text-xs bg-[#0D0D0D] rounded p-2 overflow-x-auto text-gray-300">
-{`curl -X POST http://localhost:3001/logs/ingest \\
+{`curl -X POST ${import.meta.env.VITE_API_URL || 'https://api.piglog.dev'}/logs/ingest \\
   -H "X-API-Key: ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{"logs":[{"timestamp":"${new Date().toISOString()}","level":"INFO","service":"test","message":"Hello from Piglog"}]}'`}

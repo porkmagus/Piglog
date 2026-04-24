@@ -74,6 +74,8 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: piglog-migrate-prod
     restart: "no"
+    healthcheck:
+      disable: true
     networks:
       - piglog-prod
     depends_on:
@@ -138,6 +140,8 @@ services:
     container_name: piglog-worker-prod
     restart: always
     command: ["node", "apps/api/dist/workers/index.js"]
+    healthcheck:
+      disable: true
     networks:
       - piglog-prod
     depends_on:

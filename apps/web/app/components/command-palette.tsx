@@ -33,7 +33,7 @@ export function useCommandPalette() {
 
 export default function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
-  const { activeWorkspace, workspaces } = useWorkspace();
+  const { activeWorkspace, workspaces, setActiveWorkspace } = useWorkspace();
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,13 +70,13 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       label: 'Keyboard Shortcuts',
       icon: <Keyboard className="w-4 h-4" />,
       shortcut: '?',
-      action: () => { onClose(); alert('Keyboard shortcuts coming soon!'); },
+      action: () => { onClose(); },
     },
     ...workspaces.map((ws) => ({
       id: `workspace-${ws.id}`,
       label: `Switch to ${ws.name}`,
       icon: <Zap className="w-4 h-4" />,
-      action: () => { onClose(); },
+      action: () => { setActiveWorkspace(ws); onClose(); },
     })),
   ];
 

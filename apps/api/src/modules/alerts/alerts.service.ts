@@ -1,5 +1,5 @@
-import { eq, and, gte, sql, count } from 'drizzle-orm';
-import { db, alertRule, alertRuleStatusEnum, logEntry } from '@piglog/db';
+import { eq, and, gte, sql, desc } from 'drizzle-orm';
+import { db, alertRule, alertRuleStatusEnum, logEntry, alertEvent } from '@piglog/db';
 import type { LogLevel } from '@piglog/db';
 
 export async function createAlertRule(
@@ -76,21 +76,21 @@ export async function evaluateAlertRule(ruleId: string) {
   const rule = await db.query.alertRule.findFirst({
     where: eq(alertRule.id, ruleId),
   });
-  if (!rule || rule.status !== alertRuleStatusEnum.enumValues[0]) return null; // ACTIVE
+  if (!rule || rule.status !== 'ACTIVE') return null;
 
   const windowStart = new Date(Date.now() - (rule.windowMinutes || 5) * 60 * 1000);
+
+  const conditions = [
+    eq(logEntry.workspaceId, rule.workspaceId),
+    eq(logEntry.service, rule.service),
+    gte(logEntry.timestamp, windowStart),
+  ];
+  if (rule.level) conditions.push(eq(logEntry.level, rule.level));
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(logEntry)
-    .where(
-      and(
-        eq(logEntry.workspaceId, rule.workspaceId),
-        eq(logEntry.service, rule.service),
-        rule.level ? eq(logEntry.level, rule.level) : undefined,
-        gte(logEntry.timestamp, windowStart)
-      )
-    );
+    .where(and(...conditions));
 
   const actualCount = Number(countResult[0]?.count || 0);
 
@@ -112,7 +112,34 @@ export async function evaluateAlertRule(ruleId: string) {
       .update(alertRule)
       .set({ lastTriggeredAt: new Date(), updatedAt: new Date() })
       .where(eq(alertRule.id, ruleId));
+
+    await db.insert(alertEvent).values({
+      id: crypto.randomUUID(),
+      alertRuleId: rule.id,
+      workspaceId: rule.workspaceId,
+      actualCount,
+      threshold: rule.threshold,
+      operator: rule.operator,
+      status: 'FIRED',
+    });
   }
 
   return { rule, triggered, actualCount };
+}
+
+export async function listAlertEvents(workspaceId: string, limit = 50) {
+  return db.query.alertEvent.findMany({
+    where: eq(alertEvent.workspaceId, workspaceId),
+    with: { rule: true },
+    orderBy: (event, { desc }) => [desc(event.createdAt)],
+    limit,
+  });
+}
+
+export async function listAlertEventsForRule(workspaceId: string, ruleId: string, limit = 50) {
+  return db.query.alertEvent.findMany({
+    where: and(eq(alertEvent.workspaceId, workspaceId), eq(alertEvent.alertRuleId, ruleId)),
+    orderBy: (event, { desc }) => [desc(event.createdAt)],
+    limit,
+  });
 }

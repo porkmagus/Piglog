@@ -1,6 +1,6 @@
 services:
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg18-oss
     container_name: piglog-timescale-dev
     restart: unless-stopped
     environment:

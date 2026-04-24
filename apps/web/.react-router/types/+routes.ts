@@ -38,6 +38,9 @@ type Pages = {
   "/settings/team": {
     params: {};
   };
+  "/settings/workspace": {
+    params: {};
+  };
   "/streams": {
     params: {};
   };
@@ -51,7 +54,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/onboarding" | "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/streams" | "/streams/:streamId";
+    page: "/" | "/login" | "/onboarding" | "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace" | "/streams" | "/streams/:streamId";
   };
   "routes/_index.tsx": {
     id: "routes/_index";
@@ -67,7 +70,7 @@ type RouteFiles = {
   };
   "routes/_layout.tsx": {
     id: "routes/_layout";
-    page: "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/streams" | "/streams/:streamId";
+    page: "/dashboard" | "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace" | "/streams" | "/streams/:streamId";
   };
   "routes/_layout.dashboard.tsx": {
     id: "routes/_layout.dashboard";
@@ -75,7 +78,7 @@ type RouteFiles = {
   };
   "routes/_layout.settings.tsx": {
     id: "routes/_layout.settings";
-    page: "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team";
+    page: "/settings" | "/settings/alerts" | "/settings/keys" | "/settings/sources" | "/settings/team" | "/settings/workspace";
   };
   "routes/_layout.settings._index.tsx": {
     id: "routes/_layout.settings._index";
@@ -96,6 +99,10 @@ type RouteFiles = {
   "routes/_layout.settings.team.tsx": {
     id: "routes/_layout.settings.team";
     page: "/settings/team";
+  };
+  "routes/_layout.settings.workspace.tsx": {
+    id: "routes/_layout.settings.workspace";
+    page: "/settings/workspace";
   };
   "routes/_layout.streams._index.tsx": {
     id: "routes/_layout.streams._index";
@@ -120,6 +127,7 @@ type RouteModules = {
   "routes/_layout.settings.keys": typeof import("./app/routes/_layout.settings.keys.tsx");
   "routes/_layout.settings.sources": typeof import("./app/routes/_layout.settings.sources.tsx");
   "routes/_layout.settings.team": typeof import("./app/routes/_layout.settings.team.tsx");
+  "routes/_layout.settings.workspace": typeof import("./app/routes/_layout.settings.workspace.tsx");
   "routes/_layout.streams._index": typeof import("./app/routes/_layout.streams._index.tsx");
   "routes/_layout.streams.$streamId": typeof import("./app/routes/_layout.streams.$streamId.tsx");
 };
