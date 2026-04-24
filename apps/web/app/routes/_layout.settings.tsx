@@ -1,12 +1,12 @@
 import { NavLink, Outlet } from 'react-router';
-import { Radio, Bell, Users, KeyRound, Settings } from 'lucide-react';
+import { UserCircle2, Radio, Bell, Users, Settings, Inbox } from 'lucide-react';
 
 const navItems = [
+  { to: '/settings/account', label: 'Account', icon: UserCircle2 },
   { to: '/settings/workspace', label: 'Workspace', icon: Settings },
-  { to: '/settings/sources', label: 'Sources', icon: Radio },
+  { to: '/settings/ingestion', label: 'Ingestion', icon: Inbox },
   { to: '/settings/alerts', label: 'Alerts', icon: Bell },
   { to: '/settings/team', label: 'Team', icon: Users },
-  { to: '/settings/keys', label: 'API Keys', icon: KeyRound },
 ];
 
 export default function SettingsLayout() {
