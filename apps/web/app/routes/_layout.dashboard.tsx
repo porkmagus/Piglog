@@ -91,12 +91,20 @@ export default function DashboardPage() {
           <h1 className="text-xl font-semibold mb-4">Dashboard</h1>
           <div className="rounded-lg border border-[#2A2A2A] bg-[#151515] p-8 text-center">
             <p className="text-sm text-[#8A8F98]">No log data in the last 24 hours.</p>
-            <button
-              onClick={() => navigate('/settings/sources')}
-              className="mt-3 text-sm text-[#5E6AD2] hover:underline"
-            >
-              Configure a source →
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={() => navigate('/settings/sources')}
+                className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white"
+              >
+                Add Source
+              </button>
+              <button
+                onClick={() => navigate('/settings/integrations')}
+                className="rounded-md border border-[#2A2A2A] px-3 py-2 text-sm font-medium text-gray-200"
+              >
+                Add Integration
+              </button>
+            </div>
           </div>
         </div>
       </RequireAuth>
