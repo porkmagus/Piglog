@@ -5,6 +5,11 @@ DO $$
 DECLARE
   license_type TEXT;
 BEGIN
+  IF to_regclass('timescaledb_information.license') IS NULL THEN
+    RAISE NOTICE 'TimescaleDB license metadata unavailable. Skipping continuous aggregates.';
+    RETURN;
+  END IF;
+
   SELECT edition INTO license_type FROM timescaledb_information.license;
   IF license_type = 'apache' OR license_type = 'oss' THEN
     RAISE NOTICE 'TimescaleDB OSS detected. Skipping continuous aggregates (not supported).';
@@ -33,6 +38,11 @@ DO $$
 DECLARE
   license_type TEXT;
 BEGIN
+  IF to_regclass('timescaledb_information.license') IS NULL THEN
+    RAISE NOTICE 'TimescaleDB license metadata unavailable. Skipping continuous aggregate policy.';
+    RETURN;
+  END IF;
+
   SELECT edition INTO license_type FROM timescaledb_information.license;
   IF license_type = 'apache' OR license_type = 'oss' THEN
     RETURN;

@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS "group_member" (
   "added_by_id" text REFERENCES "user"("id"),
   "added_at" timestamptz NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "group_member_unique_idx" ON "group_member"("group_id", "user_id") WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "group_member_unique_idx" ON "group_member"("group_id", "user_id");
 CREATE INDEX IF NOT EXISTS "group_member_group_idx" ON "group_member"("group_id");
 CREATE INDEX IF NOT EXISTS "group_member_user_idx" ON "group_member"("user_id");
 
