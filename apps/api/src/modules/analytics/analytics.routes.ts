@@ -170,4 +170,37 @@ export default async function analyticsRoutes(app: FastifyInstance) {
       resolvedAt: row.resolved_at ? String(row.resolved_at) : null,
     }));
   });
+
+  // Custom SQL query
+  app.post('/query', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['sql'],
+        properties: {
+          sql: { type: 'string', maxLength: 4096 },
+          timeRange: { type: 'string', enum: ['1h', '6h', '24h', '7d'] },
+        },
+      },
+    },
+  }, async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const { executeSandboxedQuery } = await import('./query.service.js');
+    const body = request.body as { sql: string; timeRange?: string };
+
+    try {
+      const result = await executeSandboxedQuery(
+        request.workspace!.id,
+        body.sql,
+        body.timeRange || '24h',
+      );
+      return result;
+    } catch (err) {
+      return reply.status(400).send({
+        error: err instanceof Error ? err.message : 'Query execution failed',
+      });
+    }
+  });
 }
