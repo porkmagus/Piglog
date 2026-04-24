@@ -15,11 +15,12 @@ export default async function healthRoutes(app: FastifyInstance) {
       // Check Redis
       await redisConnection.ping();
       return { status: 'ready', timestamp: new Date().toISOString() };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       request.log.error({ err }, 'Health check failed');
       return reply.status(503).send({
         status: 'not_ready',
-        error: err.message,
+        error: message,
         timestamp: new Date().toISOString(),
       });
     }

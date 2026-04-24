@@ -23,6 +23,13 @@ import { getGlobalRateLimitKey, shouldBypassGlobalRateLimit } from './lib/rate-l
 export async function app(fastify: FastifyInstance) {
   const trustedOrigins = getTrustedOrigins();
 
+  // Global error handler for unhandled route errors
+  fastify.setErrorHandler((error, _request, reply) => {
+    fastify.log.error({ err: error }, 'Unhandled route error');
+    if (reply.sent) return;
+    reply.status(500).send({ error: 'Internal server error' });
+  });
+
   await fastify.register(cors, {
     origin: trustedOrigins,
     credentials: true,

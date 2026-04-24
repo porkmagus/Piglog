@@ -1,14 +1,23 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, and, isNull } from 'drizzle-orm';
+import { z } from 'zod';
 import { logSource } from '@piglog/db';
 import { ingestLogs } from '../logs/logs.service.js';
 import { requireAuth, type AuthenticatedRequest } from '../../plugins/auth.js';
 import { extractWorkspace, type WorkspaceRequest } from '../../middleware/workspace.js';
 
+const uploadQuerySchema = z.object({
+  sourceId: z.string().min(1),
+});
+
 export default async function uploadLogRoutes(app: FastifyInstance) {
   app.addHook('onRequest', requireAuth);
 
   app.post('/', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    const query = uploadQuerySchema.safeParse(request.query);
+    if (!query.success) {
+      return reply.status(400).send({ error: 'Invalid query params', issues: query.error.issues });
+    }
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 
@@ -17,10 +26,7 @@ export default async function uploadLogRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'No file uploaded' });
     }
 
-    const { sourceId } = request.query as { sourceId?: string };
-    if (!sourceId) {
-      return reply.status(400).send({ error: 'sourceId query param required' });
-    }
+    const sourceId = query.data.sourceId;
 
     const source = await app.db.query.logSource.findFirst({
       where: and(

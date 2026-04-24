@@ -59,7 +59,9 @@ export default async function integrationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.patch('/:id/disable', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+  app.patch('/:id/disable', {
+    schema: { body: {} },
+  }, async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 
@@ -72,7 +74,9 @@ export default async function integrationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.patch('/:id/enable', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+  app.patch('/:id/enable', {
+    schema: { body: {} },
+  }, async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 

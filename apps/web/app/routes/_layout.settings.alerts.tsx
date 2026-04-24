@@ -36,6 +36,7 @@ export default function AlertsPage() {
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [events, setEvents] = useState<AlertEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newRule, setNewRule] = useState({
@@ -82,6 +83,7 @@ export default function AlertsPage() {
   async function createRule(e: React.FormEvent) {
     e.preventDefault();
     if (!activeWorkspace) return;
+    setCreating(true);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/alerts`, {
         method: 'POST',
@@ -105,6 +107,8 @@ export default function AlertsPage() {
       loadRules();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create alert rule');
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -274,7 +278,8 @@ export default function AlertsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="submit"
-                    className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+                    disabled={creating}
+                    className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
                   >
                     Create Rule
                   </button>

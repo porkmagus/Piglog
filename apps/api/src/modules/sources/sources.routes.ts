@@ -46,7 +46,9 @@ export default async function sourceRoutes(app: FastifyInstance) {
     return source;
   });
 
-  app.post('/:sourceId/regenerate-key', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+  app.post('/:sourceId/regenerate-key', {
+    schema: { body: {} },
+  }, async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 

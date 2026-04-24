@@ -3,6 +3,7 @@ import { eq, and, gte, sql } from 'drizzle-orm';
 import { db, logEntry, alertRule } from '@piglog/db';
 import { evaluateAlertRule } from '../modules/alerts/alerts.service.js';
 import { redisConnection, webhookNotifyQueue } from '../queues/index.js';
+import { createLogger } from '../lib/logger.js';
 
 const alertWorker = new Worker(
   'alert-evaluate',
@@ -72,8 +73,10 @@ const alertWorker = new Worker(
   { connection: redisConnection }
 );
 
+const log = createLogger('alert');
+
 alertWorker.on('failed', (job, err) => {
-  console.error(`Alert job ${job?.id} failed:`, err);
+  log.error(`Job ${job?.id} failed: ${err.message}`);
 });
 
 export { alertWorker };

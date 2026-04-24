@@ -23,8 +23,8 @@ export default function LoginPage() {
         await login(email, password);
       }
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setLoading(false);
     }

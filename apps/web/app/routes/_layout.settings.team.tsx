@@ -29,6 +29,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -68,6 +69,7 @@ export default function TeamPage() {
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!activeWorkspace || !inviteEmail) return;
+    setInviting(true);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/invitations`, {
         method: 'POST',
@@ -78,6 +80,8 @@ export default function TeamPage() {
       loadInvites();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send invitation');
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -170,7 +174,8 @@ export default function TeamPage() {
             <div className="flex items-center gap-2">
               <button
                 type="submit"
-                className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+                disabled={inviting}
+                className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
               >
                 Send Invitation
               </button>

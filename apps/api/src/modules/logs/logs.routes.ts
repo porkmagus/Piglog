@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { logSource, logLevelEnum } from '@piglog/db';
@@ -43,7 +43,7 @@ export default async function logRoutes(app: FastifyInstance) {
       rateLimit: {
         max: 1000,
         timeWindow: '1 minute',
-        keyGenerator: (req: any) => req.headers['x-api-key'] || req.ip,
+        keyGenerator: (req: FastifyRequest) => (req.headers['x-api-key'] as string) || req.ip,
       },
     },
   }, async (request, reply) => {

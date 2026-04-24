@@ -25,6 +25,7 @@ export default function SourcesPage() {
   const { activeWorkspace } = useWorkspace();
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('http');
@@ -63,6 +64,7 @@ export default function SourcesPage() {
     e.preventDefault();
     if (!newName.trim() || !activeWorkspace) return;
     setError(null);
+    setCreating(true);
     const body: Record<string, unknown> = { name: newName, type: newType };
     if (newType === 'snmp') {
       body.config = {
@@ -88,6 +90,8 @@ export default function SourcesPage() {
       loadSources();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create source');
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -254,7 +258,8 @@ export default function SourcesPage() {
             <div className="flex items-center gap-2">
               <button
                 type="submit"
-                className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+                disabled={creating}
+                className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
               >
                 Create
               </button>

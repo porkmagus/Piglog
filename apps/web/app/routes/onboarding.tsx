@@ -45,8 +45,8 @@ export default function OnboardingPage() {
       setActiveWorkspace({ ...ws, role: 'OWNER' });
       await refreshWorkspaces();
       setStep(2);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create workspace');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create workspace');
     } finally {
       setLoading(false);
     }
@@ -68,8 +68,8 @@ export default function OnboardingPage() {
       });
       setApiKey(source.apiKey);
       setStep(3);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create source');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create source');
     } finally {
       setLoading(false);
     }

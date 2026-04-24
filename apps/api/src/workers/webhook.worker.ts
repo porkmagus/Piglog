@@ -1,6 +1,8 @@
 import { Worker } from 'bullmq';
 import { redisConnection } from '../queues/index.js';
+import { createLogger } from '../lib/logger.js';
 
+const log = createLogger('webhook');
 const WEBHOOK_TIMEOUT_MS = parseInt(process.env.WEBHOOK_TIMEOUT_MS || '10000', 10);
 const WEBHOOK_MAX_RETRIES = parseInt(process.env.WEBHOOK_MAX_RETRIES || '3', 10);
 
@@ -38,11 +40,11 @@ const webhookWorker = new Worker<WebhookJobData>(
         );
       }
 
-      console.log(`[webhook] Delivered to ${url} (HTTP ${response.status})`);
+      log.info(`Delivered to ${url} (HTTP ${response.status})`);
     } catch (err) {
       clearTimeout(timeout);
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[webhook] Failed to deliver to ${url}: ${message}`);
+      log.error(`Failed to deliver to ${url}: ${message}`);
       throw err; // Let BullMQ handle retry
     }
   },
@@ -57,19 +59,17 @@ const webhookWorker = new Worker<WebhookJobData>(
 );
 
 webhookWorker.on('completed', (job) => {
-  console.log(`[webhook] Job ${job.id} completed`);
+  log.info(`Job ${job.id} completed`);
 });
 
 webhookWorker.on('failed', (job, err) => {
   const attempts = job?.attemptsMade ?? 0;
   const maxAttempts = (job?.opts.attempts ?? WEBHOOK_MAX_RETRIES) + 1;
-  console.error(
-    `[webhook] Job ${job?.id} failed (${attempts}/${maxAttempts}): ${err.message}`
-  );
+  log.error(`Job ${job?.id} failed (${attempts}/${maxAttempts}): ${err.message}`);
 });
 
 webhookWorker.on('error', (err) => {
-  console.error('[webhook] Worker error:', err);
+  log.error(`Worker error: ${err.message}`);
 });
 
 export { webhookWorker };
