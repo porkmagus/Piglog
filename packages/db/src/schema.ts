@@ -591,3 +591,26 @@ export const integrationSourceRelations = relations(integrationSource, ({ one })
   integration: one(integration, { fields: [integrationSource.integrationId], references: [integration.id] }),
   source: one(logSource, { fields: [integrationSource.sourceId], references: [logSource.id] }),
 }));
+
+// ============================================================
+// Dashboard
+// ============================================================
+export const dashboardLayout = pgTable('dashboard_layout', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id')
+    .notNull()
+    .references(() => workspace.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .references(() => user.id, { onDelete: 'cascade' }),
+  layout: json('layout').notNull().default(sql`'[]'::json`),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('dashboard_layout_workspace_idx').on(table.workspaceId),
+  index('dashboard_layout_user_idx').on(table.workspaceId, table.userId),
+]);
+
+export const dashboardLayoutRelations = relations(dashboardLayout, ({ one }) => ({
+  workspace: one(workspace, { fields: [dashboardLayout.workspaceId], references: [workspace.id] }),
+  user: one(user, { fields: [dashboardLayout.userId], references: [user.id] }),
+}));
