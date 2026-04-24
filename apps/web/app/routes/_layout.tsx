@@ -95,7 +95,7 @@ export default function AppLayout() {
             aria-label="Account settings"
             className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#151515]"
           >
-            <span className="text-sm truncate">{user?.email}</span>
+            <span className="text-sm truncate" title={user?.email}>{user?.email?.split('@')[0]}</span>
             <SettingsIcon className="w-4 h-4 text-[#8A8F98]" />
           </Link>
         </div>

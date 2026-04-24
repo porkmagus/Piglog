@@ -17,6 +17,9 @@ interface NextDnsLogEvent {
   [key: string]: unknown;
 }
 
+const MAX_SYNC_PAGES = 50;
+const SYNC_BATCH_SIZE = 500;
+
 export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
 
@@ -28,6 +31,23 @@ export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
     message: `${event.status} dns query for ${event.query}`,
     metadata: event,
   };
+}
+
+async function fetchNextDnsLogs(profileId: string, secret: string, since?: string): Promise<NextDnsLogEvent[]> {
+  const url = since
+    ? `https://api.nextdns.io/profile/${profileId}/log?since=${since}`
+    : `https://api.nextdns.io/profile/${profileId}/log`;
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${secret}` },
+  });
+
+  if (!res.ok) {
+    throw new Error(`NextDNS sync failed: ${res.status} ${res.statusText}`);
+  }
+
+  const data: unknown = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export const nextDnsConnector: IntegrationConnector = {
@@ -70,36 +90,30 @@ export const nextDnsConnector: IntegrationConnector = {
       return { nextState: params.state, accepted: 0 };
     }
 
-    const since = (params.state.cursor as string) || undefined;
-    const url = since
-      ? `https://api.nextdns.io/profile/${profileId}/log?since=${since}`
-      : `https://api.nextdns.io/profile/${profileId}/log`;
+    let cursor = (params.state.cursor as string) || undefined;
+    let totalAccepted = 0;
+    let pages = 0;
 
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${params.secret}` },
-    });
+    do {
+      const logs = await fetchNextDnsLogs(profileId, params.secret, cursor);
 
-    if (!res.ok) {
-      throw new Error(`NextDNS sync failed: ${res.status} ${res.statusText}`);
-    }
+      if (logs.length === 0) break;
 
-    const rawLogs: unknown = await res.json();
-    const logs: NextDnsLogEvent[] = Array.isArray(rawLogs) ? rawLogs : [];
+      const batch = logs.slice(0, SYNC_BATCH_SIZE);
+      const mappedLogs = batch.map(mapNextDnsEventToPiglogLog);
+      const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
+      totalAccepted += result.accepted;
 
-    if (logs.length === 0) {
-      return { nextState: params.state, accepted: 0 };
-    }
+      cursor = logs[logs.length - 1].id;
+      pages++;
+    } while (pages < MAX_SYNC_PAGES);
 
-    const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
-    const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
-
-    const lastLog = logs[logs.length - 1];
     return {
       nextState: {
         ...params.state,
-        cursor: lastLog.id,
+        cursor,
       },
-      accepted: result.accepted,
+      accepted: totalAccepted,
     };
   },
 };

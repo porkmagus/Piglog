@@ -35,18 +35,21 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+  const mockResponse = {
     ok: true,
+    status: 200,
+    headers: { get: vi.fn().mockReturnValue('application/json') },
     json: () => Promise.resolve({ volume: [], levels: [], services: [], hosts: [], total24h: 0 }),
     text: () => Promise.resolve(''),
-  }));
+  };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
 });
 
 describe('DashboardPage empty state', () => {
-  it('offers add source and add integration actions', () => {
+  it('offers add source and add integration actions', async () => {
     renderWithProviders(<DashboardPage />);
 
-    waitFor(() => {
+    await waitFor(() => {
       expect(screen.getByRole('button', { name: /add source/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /add integration/i })).toBeInTheDocument();
     });
