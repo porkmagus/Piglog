@@ -23,7 +23,19 @@ const GENERIC_TRAP_NAMES: Record<number, string> = {
 let missingSchemaWarningShown = false;
 
 function isMissingRelationError(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && err.code === '42P01';
+  if (typeof err !== 'object' || err === null) {
+    return false;
+  }
+
+  if ('code' in err && err.code === '42P01') {
+    return true;
+  }
+
+  if ('cause' in err) {
+    return isMissingRelationError(err.cause);
+  }
+
+  return false;
 }
 
 async function getConfiguredSnmpSources() {
