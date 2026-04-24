@@ -4,6 +4,13 @@ vi.mock('./connectors/index.js', () => ({
   getConnector: vi.fn(),
 }));
 
+vi.mock('../../queues/index.js', () => ({
+  integrationSyncQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'job_123' }),
+    removeRepeatableByKey: vi.fn().mockResolvedValue(null),
+  },
+}));
+
 vi.mock('@piglog/db', () => {
   const selectResult = [{
     id: 'int_123',

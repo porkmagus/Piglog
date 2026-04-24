@@ -46,11 +46,16 @@ export async function listSources(workspaceId: string) {
 
   const statsMap = new Map(stats.map((s) => [s.sourceId, s]));
 
-  return sources.map((s) => ({
-    ...s,
-    volume24h: statsMap.get(s.id)?.count || 0,
-    lastSeen: statsMap.get(s.id)?.latest || null,
-  }));
+  return sources.map((s) => {
+    const cfg = (s.config && typeof s.config === 'object') ? (s.config as Record<string, unknown>) : {};
+    const isInternal = cfg.integrationManaged === true;
+    return {
+      ...s,
+      volume24h: statsMap.get(s.id)?.count || 0,
+      lastSeen: statsMap.get(s.id)?.latest || null,
+      isInternal,
+    };
+  });
 }
 
 export async function getSource(workspaceId: string, sourceId: string) {

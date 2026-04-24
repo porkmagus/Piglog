@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth, type AuthenticatedRequest } from '../../plugins/auth.js';
 import { extractWorkspace, type WorkspaceRequest } from '../../middleware/workspace.js';
-import { listIntegrations, createIntegrationWithSources, disableIntegration, deleteIntegration } from './integrations.service.js';
-import { createIntegrationSchema } from './integrations.schemas.js';
+import { listIntegrations, createIntegrationWithSources, disableIntegration, enableIntegration, deleteIntegration } from './integrations.service.js';
+import { createIntegrationSchema, testConnectionSchema } from './integrations.schemas.js';
 import { getConnector } from './connectors/index.js';
 
 export default async function integrationRoutes(app: FastifyInstance) {
@@ -30,6 +30,7 @@ export default async function integrationRoutes(app: FastifyInstance) {
       });
       return reply.status(201).send(integration);
     } catch (err) {
+      app.log.error({ err }, 'Failed to create integration');
       return reply.status(500).send({ error: err instanceof Error ? err.message : 'Failed to create integration' });
     }
   });
@@ -41,6 +42,19 @@ export default async function integrationRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     try {
       await disableIntegration(id);
+      return { ok: true };
+    } catch (err) {
+      return reply.status(404).send({ error: err instanceof Error ? err.message : 'Integration not found' });
+    }
+  });
+
+  app.patch('/:id/enable', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const { id } = request.params as { id: string };
+    try {
+      await enableIntegration(id);
       return { ok: true };
     } catch (err) {
       return reply.status(404).send({ error: err instanceof Error ? err.message : 'Integration not found' });
@@ -64,7 +78,7 @@ export default async function integrationRoutes(app: FastifyInstance) {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 
-    const body = createIntegrationSchema.safeParse(request.body);
+    const body = testConnectionSchema.safeParse(request.body);
     if (!body.success) {
       return reply.status(400).send({ error: 'Invalid body', issues: body.error.issues });
     }
@@ -86,7 +100,7 @@ export default async function integrationRoutes(app: FastifyInstance) {
     await extractWorkspace(request, reply);
     if (reply.sent) return;
 
-    const body = createIntegrationSchema.safeParse(request.body);
+    const body = testConnectionSchema.safeParse(request.body);
     if (!body.success) {
       return reply.status(400).send({ error: 'Invalid body', issues: body.error.issues });
     }
@@ -100,7 +114,7 @@ export default async function integrationRoutes(app: FastifyInstance) {
       const entities = await connector.discoverEntities({}, body.data.secret);
       return { entities };
     } catch (err) {
-      request.server.log.error({ err }, 'Integration discovery failed');
+      app.log.error({ err }, 'Integration discovery failed');
       return reply.status(500).send({ error: err instanceof Error ? err.message : 'Discovery failed' });
     }
   });

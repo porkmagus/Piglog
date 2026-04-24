@@ -25,9 +25,7 @@ export function NextDnsConnectForm() {
         method: 'POST',
         body: JSON.stringify({
           provider: 'nextdns',
-          name,
           secret: apiKey,
-          config: { profileIds: [''], backfillHours: 24 },
         }),
       });
       setProfiles(data.entities);
@@ -133,7 +131,7 @@ export function NextDnsConnectForm() {
           type="password"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk_..."
+          placeholder="Enter your NextDNS API key"
           className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
           required
         />

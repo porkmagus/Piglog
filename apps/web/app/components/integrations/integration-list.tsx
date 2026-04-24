@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchApi } from '~/lib/api';
 import { useWorkspace } from '~/lib/workspace';
-import { Trash2, AlertCircle, CheckCircle2, Loader2, Pause } from 'lucide-react';
+import { Trash2, AlertCircle, CheckCircle2, Loader2, Pause, Play } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -25,6 +25,8 @@ export function IntegrationList() {
   const { activeWorkspace } = useWorkspace();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeWorkspace) loadIntegrations();
@@ -33,10 +35,12 @@ export function IntegrationList() {
   async function loadIntegrations() {
     if (!activeWorkspace) return;
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchApi(`/workspaces/${activeWorkspace.id}/integrations`);
       setIntegrations(data || []);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load integrations');
       setIntegrations([]);
     } finally {
       setLoading(false);
@@ -44,22 +48,35 @@ export function IntegrationList() {
   }
 
   async function handleDelete(id: string) {
-    if (!activeWorkspace || !confirm('Delete this integration? Hidden sources will be removed.')) return;
+    if (!activeWorkspace) return;
+    const int = integrations.find((i) => i.id === id);
+    if (!int || !window.confirm(`Delete "${int.name}"? Hidden sources will be removed.`)) return;
+
+    setPendingAction(id);
     try {
       await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/${id}`, { method: 'DELETE' });
       loadIntegrations();
-    } catch {
-      alert('Failed to delete integration');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete integration');
+    } finally {
+      setPendingAction(null);
     }
   }
 
-  async function handleDisable(id: string) {
-    if (!activeWorkspace || !confirm('Disable this integration?')) return;
+  async function handleToggleDisable(id: string, currentlyDisabled: boolean) {
+    if (!activeWorkspace) return;
+    setPendingAction(id);
     try {
-      await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/${id}/disable`, { method: 'PATCH' });
+      if (currentlyDisabled) {
+        await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/${id}/enable`, { method: 'PATCH' });
+      } else {
+        await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/${id}/disable`, { method: 'PATCH' });
+      }
       loadIntegrations();
-    } catch {
-      alert('Failed to disable integration');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to ${currentlyDisabled ? 'enable' : 'disable'} integration`);
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -67,64 +84,73 @@ export function IntegrationList() {
     return <div className="text-sm text-[#8A8F98]">Loading integrations...</div>;
   }
 
-  if (integrations.length === 0) {
-    return null;
+  if (integrations.length === 0 && !error) {
+    return (
+      <div className="rounded-lg border border-[#2A2A2A] bg-[#151515] px-6 py-8 text-center">
+        <p className="text-sm text-[#8A8F98]">No integrations yet. Connect a service below to get started.</p>
+      </div>
+    );
   }
 
   return (
-    <section className="rounded-lg border border-[#2A2A2A] bg-[#151515] overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[#2A2A2A] text-[#8A8F98]">
-            <th className="text-left font-medium px-4 py-2">Name</th>
-            <th className="text-left font-medium px-4 py-2">Provider</th>
-            <th className="text-left font-medium px-4 py-2">Status</th>
-            <th className="text-right font-medium px-4 py-2">Last Synced</th>
-            <th className="text-right font-medium px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {integrations.map((int) => {
-            const status = STATUS_CONFIG[int.status] || STATUS_CONFIG.PENDING;
-            const StatusIcon = status.icon;
-            return (
-              <tr key={int.id} className="border-b border-[#2A2A2A]/50 hover:bg-[#1a1a1a] transition-colors">
-                <td className="px-4 py-3 font-medium">{int.name}</td>
-                <td className="px-4 py-3 capitalize text-[#8A8F98]">{int.provider}</td>
-                <td className="px-4 py-3">
-                  <div className={`flex items-center gap-1.5 ${status.color}`}>
-                    <StatusIcon className={`w-4 h-4 ${int.status === 'SYNCING' ? 'animate-spin' : ''}`} />
-                    <span>{status.label}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right text-[#8A8F98]">
-                  {int.lastSyncedAt ? new Date(int.lastSyncedAt).toLocaleString() : '—'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    {int.status !== 'DISABLED' && (
+    <div className="space-y-3">
+      {error && <div className="text-sm text-red-400">{error}</div>}
+      <section className="rounded-lg border border-[#2A2A2A] bg-[#151515] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#2A2A2A] text-[#8A8F98]">
+              <th className="text-left font-medium px-4 py-2">Name</th>
+              <th className="text-left font-medium px-4 py-2">Provider</th>
+              <th className="text-left font-medium px-4 py-2">Status</th>
+              <th className="text-right font-medium px-4 py-2">Last Synced</th>
+              <th className="text-right font-medium px-4 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {integrations.map((int) => {
+              const status = STATUS_CONFIG[int.status] || STATUS_CONFIG.PENDING;
+              const StatusIcon = status.icon;
+              const isDisabled = int.status === 'DISABLED';
+              const isActionPending = pendingAction === int.id;
+              return (
+                <tr key={int.id} className="border-b border-[#2A2A2A]/50 hover:bg-[#1a1a1a] transition-colors">
+                  <td className="px-4 py-3 font-medium">{int.name}</td>
+                  <td className="px-4 py-3 capitalize text-[#8A8F98]">{int.provider}</td>
+                  <td className="px-4 py-3">
+                    <div className={`flex items-center gap-1.5 ${status.color}`}>
+                      <StatusIcon className={`w-4 h-4 ${int.status === 'SYNCING' ? 'animate-spin' : ''}`} />
+                      <span>{status.label}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right text-[#8A8F98]">
+                    {int.lastSyncedAt ? new Date(int.lastSyncedAt).toLocaleString() : '\u2014'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => handleDisable(int.id)}
-                        className="p-1.5 rounded hover:bg-[#2A2A2A] text-[#8A8F98] hover:text-gray-200 transition-colors"
-                        title="Disable"
+                        onClick={() => handleToggleDisable(int.id, isDisabled)}
+                        disabled={isActionPending}
+                        className="p-1.5 rounded hover:bg-[#2A2A2A] text-[#8A8F98] hover:text-gray-200 transition-colors disabled:opacity-50"
+                        title={isDisabled ? 'Enable' : 'Disable'}
                       >
-                        <Pause className="w-4 h-4" />
+                        {isDisabled ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(int.id)}
-                      className="p-1.5 rounded hover:bg-red-500/10 text-[#8A8F98] hover:text-red-400 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
+                      <button
+                        onClick={() => handleDelete(int.id)}
+                        disabled={isActionPending}
+                        className="p-1.5 rounded hover:bg-red-500/10 text-[#8A8F98] hover:text-red-400 transition-colors disabled:opacity-50"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+    </div>
   );
 }

@@ -10,4 +10,10 @@ export const createIntegrationSchema = z.object({
   secret: z.string().min(1),
 });
 
+export const testConnectionSchema = z.object({
+  provider: z.literal('nextdns'),
+  secret: z.string().min(1),
+});
+
 export type CreateIntegrationInput = z.infer<typeof createIntegrationSchema>;
+export type TestConnectionInput = z.infer<typeof testConnectionSchema>;

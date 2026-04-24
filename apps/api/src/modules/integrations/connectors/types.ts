@@ -4,7 +4,7 @@ export interface DiscoveredIntegrationEntity {
 }
 
 export interface IntegrationConnector {
-  provider: 'nextdns';
+  provider: string;
   discoverEntities(config: Record<string, unknown>, secret: string): Promise<DiscoveredIntegrationEntity[]>;
   testConnection(config: Record<string, unknown>, secret: string): Promise<void>;
   sync(params: {

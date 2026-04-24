@@ -19,6 +19,7 @@ interface NextDnsLogEvent {
 }
 
 const SYNC_BATCH_SIZE = 500;
+const FETCH_TIMEOUT_MS = 30_000;
 
 export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
@@ -34,12 +35,14 @@ export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   };
 }
 
-async function fetchNextDnsLogs(profileId: string, apiKey: string, cursor?: string): Promise<{ logs: NextDnsLogEvent[]; nextCursor: string | null }> {
+async function fetchNextDnsLogs(profileId: string, apiKey: string, cursor?: string, from?: string): Promise<{ logs: NextDnsLogEvent[]; nextCursor: string | null }> {
   const params = new URLSearchParams({ limit: String(SYNC_BATCH_SIZE) });
   if (cursor) params.set('cursor', cursor);
+  if (from) params.set('from', from);
 
   const res = await fetch(`https://api.nextdns.io/profiles/${profileId}/logs?${params}`, {
     headers: { 'X-Api-Key': apiKey },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -58,6 +61,7 @@ export const nextDnsConnector: IntegrationConnector = {
   async testConnection(_config: Record<string, unknown>, secret: string) {
     const res = await fetch('https://api.nextdns.io/profiles', {
       headers: { 'X-Api-Key': secret },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
       throw new Error(`NextDNS connection test failed: ${res.status} ${res.statusText}`);
@@ -67,6 +71,7 @@ export const nextDnsConnector: IntegrationConnector = {
   async discoverEntities(_config: Record<string, unknown>, secret: string): Promise<DiscoveredIntegrationEntity[]> {
     const res = await fetch('https://api.nextdns.io/profiles', {
       headers: { 'X-Api-Key': secret },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
       throw new Error(`NextDNS discovery failed: ${res.status} ${res.statusText}`);
@@ -87,40 +92,40 @@ export const nextDnsConnector: IntegrationConnector = {
     secret: string;
     state: Record<string, unknown>;
   }): Promise<{ nextState: Record<string, unknown>; accepted: number }> {
-    const profileIds = (params.config.profileIds as string[]) || [];
-    if (profileIds.length === 0) {
+    const profileId = params.config.profileId as string;
+    if (!profileId) {
       return { nextState: params.state, accepted: 0 };
     }
 
-    const cursors = (params.state.cursors as Record<string, string>) || {};
+    const backfillHours = (params.config.backfillHours as number) || 24;
+    const fromDate = new Date(Date.now() - backfillHours * 60 * 60 * 1000);
+    const fromParam = fromDate.toISOString();
+
+    const cursor = (params.state.cursor as string) || undefined;
+    let profileCursor = cursor;
     let totalAccepted = 0;
-    const newCursors: Record<string, string> = {};
+    let firstPage = true;
 
-    for (const profileId of profileIds) {
-      let profileCursor: string | undefined = cursors[profileId];
+    do {
+      const pageCursor = firstPage ? undefined : profileCursor;
+      const from = firstPage ? fromParam : undefined;
+      firstPage = false;
 
-      do {
-        const { logs, nextCursor } = await fetchNextDnsLogs(profileId, params.secret, profileCursor);
+      const { logs, nextCursor } = await fetchNextDnsLogs(profileId, params.secret, pageCursor, from);
 
-        if (logs.length === 0) break;
+      if (logs.length === 0) break;
 
-        const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
-        const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
-        totalAccepted += result.accepted;
+      const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
+      const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
+      totalAccepted += result.accepted;
 
-        if (nextCursor) {
-          newCursors[profileId] = nextCursor;
-          profileCursor = nextCursor;
-        } else {
-          profileCursor = undefined;
-        }
-      } while (profileCursor);
-    }
+      profileCursor = nextCursor || undefined;
+    } while (profileCursor);
 
     return {
       nextState: {
         ...params.state,
-        cursors: { ...cursors, ...newCursors },
+        cursor: profileCursor || null,
       },
       accepted: totalAccepted,
     };
