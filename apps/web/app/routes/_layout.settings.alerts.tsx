@@ -149,7 +149,7 @@ export default function AlertsPage() {
           {tab === 'rules' && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors"
             >
               <Plus className="w-4 h-4" />
               New Rule
@@ -162,7 +162,7 @@ export default function AlertsPage() {
             onClick={() => setTab('rules')}
             className={`pb-2 text-sm font-medium transition-colors ${
               tab === 'rules'
-                ? 'text-gray-100 border-b-2 border-[#5E6AD2]'
+                ? 'text-gray-100 border-b-2 border-[#F09040]'
                 : 'text-[#8A8F98] hover:text-gray-200'
             }`}
           >
@@ -172,7 +172,7 @@ export default function AlertsPage() {
             onClick={() => setTab('history')}
             className={`pb-2 text-sm font-medium transition-colors ${
               tab === 'history'
-                ? 'text-gray-100 border-b-2 border-[#5E6AD2]'
+                ? 'text-gray-100 border-b-2 border-[#F09040]'
                 : 'text-[#8A8F98] hover:text-gray-200'
             }`}
           >
@@ -194,7 +194,7 @@ export default function AlertsPage() {
                       value={newRule.name}
                       onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
                       placeholder="e.g. High error rate"
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       required
                     />
                   </div>
@@ -204,7 +204,7 @@ export default function AlertsPage() {
                       value={newRule.service}
                       onChange={(e) => setNewRule({ ...newRule, service: e.target.value })}
                       placeholder="e.g. api"
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       required
                     />
                   </div>
@@ -216,7 +216,7 @@ export default function AlertsPage() {
                     <select
                       value={newRule.level}
                       onChange={(e) => setNewRule({ ...newRule, level: e.target.value })}
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     >
                       <option value="">Any</option>
                       <option value="DEBUG">DEBUG</option>
@@ -231,7 +231,7 @@ export default function AlertsPage() {
                     <select
                       value={newRule.operator}
                       onChange={(e) => setNewRule({ ...newRule, operator: e.target.value })}
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     >
                       <option value="GREATER_THAN">Greater than</option>
                       <option value="LESS_THAN">Less than</option>
@@ -245,7 +245,7 @@ export default function AlertsPage() {
                       min={1}
                       value={newRule.threshold}
                       onChange={(e) => setNewRule({ ...newRule, threshold: parseInt(e.target.value) })}
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       required
                     />
                   </div>
@@ -260,7 +260,7 @@ export default function AlertsPage() {
                       max={1440}
                       value={newRule.windowMinutes}
                       onChange={(e) => setNewRule({ ...newRule, windowMinutes: parseInt(e.target.value) })}
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     />
                   </div>
                   <div>
@@ -270,7 +270,7 @@ export default function AlertsPage() {
                       value={newRule.webhookUrl}
                       onChange={(e) => setNewRule({ ...newRule, webhookUrl: e.target.value })}
                       placeholder="https://hooks.slack.com/..."
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     />
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export default function AlertsPage() {
                   <button
                     type="submit"
                     disabled={creating}
-                    className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors disabled:opacity-50"
                   >
                     Create Rule
                   </button>

@@ -16,7 +16,7 @@ export default function IngestionPage() {
           <section className="rounded-lg border border-[#2A2A2A] bg-[#151515] p-4">
             <h2 className="text-sm font-medium">Sources</h2>
             <p className="mt-2 text-sm text-[#8A8F98]">Examples: HTTP JSON, Syslog, Vector.</p>
-            <Link to="/settings/sources" className="mt-4 inline-flex rounded-md bg-[#5E6AD2] px-3 py-2 text-sm text-white">
+            <Link to="/settings/sources" className="mt-4 inline-flex rounded-md bg-[#F09040] px-3 py-2 text-sm text-white">
               Add Source
             </Link>
           </section>

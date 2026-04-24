@@ -22,7 +22,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=DotGothic16&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=DotGothic16&family=Space+Grotesk:ital,wght@0,400..700;1,400..700&display=swap',
   },
 ];
 

@@ -104,7 +104,7 @@ export default function OnboardingPage() {
                   setWorkspaceSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'));
                 }}
                 placeholder="My Team"
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
@@ -114,14 +114,14 @@ export default function OnboardingPage() {
                 value={workspaceSlug}
                 onChange={(e) => setWorkspaceSlug(e.target.value)}
                 placeholder="my-team"
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] disabled:opacity-50 transition-colors"
+              className="w-full rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white hover:bg-[#D87830] disabled:opacity-50 transition-colors"
             >
               {loading ? 'Creating...' : 'Create Workspace'}
             </button>
@@ -136,14 +136,14 @@ export default function OnboardingPage() {
                 value={sourceName}
                 onChange={(e) => setSourceName(e.target.value)}
                 placeholder="production-api"
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] disabled:opacity-50 transition-colors"
+              className="w-full rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white hover:bg-[#D87830] disabled:opacity-50 transition-colors"
             >
               {loading ? 'Creating...' : 'Create Source'}
             </button>
@@ -171,7 +171,7 @@ export default function OnboardingPage() {
             </div>
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+              className="w-full rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
             >
               Go to Dashboard
             </button>

@@ -48,7 +48,7 @@ export default function LoginPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
@@ -59,7 +59,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+              className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
               required
             />
           </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+              className="w-full rounded-md border border-[#2A2A2A] bg-[#151515] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
               required
               minLength={8}
             />
@@ -80,7 +80,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] disabled:opacity-50 transition-colors"
+            className="w-full rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white hover:bg-[#D87830] disabled:opacity-50 transition-colors"
           >
             {loading ? 'Loading...' : isSignup ? 'Create account' : 'Sign in'}
           </button>
@@ -90,7 +90,7 @@ export default function LoginPage() {
           {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             onClick={() => setIsSignup(!isSignup)}
-            className="text-[#5E6AD2] hover:underline"
+            className="text-[#F09040] hover:underline"
           >
             {isSignup ? 'Sign in' : 'Create one'}
           </button>

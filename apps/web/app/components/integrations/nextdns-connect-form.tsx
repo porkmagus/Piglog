@@ -92,7 +92,7 @@ export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }
                   else next.delete(profile.id);
                   setSelectedProfiles(next);
                 }}
-                className="rounded border-[#2A2A2A] bg-[#0D0D0D] text-[#5E6AD2] focus:ring-[#5E6AD2]"
+                className="rounded border-[#2A2A2A] bg-[#0D0D0D] text-[#F09040] focus:ring-[#F09040]"
               />
               <span className="text-sm">{profile.name || profile.id}</span>
             </label>
@@ -103,7 +103,7 @@ export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }
             type="button"
             onClick={handleConnect}
             disabled={loading || selectedProfiles.size === 0}
-            className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {loading ? 'Connecting...' : `Connect ${selectedProfiles.size} Profile${selectedProfiles.size > 1 ? 's' : ''}`}
           </button>
@@ -130,7 +130,7 @@ export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. My NextDNS"
-          className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+          className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
           required
         />
       </div>
@@ -141,7 +141,7 @@ export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           placeholder="Enter your NextDNS API key"
-          className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+          className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
           required
         />
       </div>
@@ -150,7 +150,7 @@ export function NextDnsConnectForm({ onConnected }: { onConnected?: () => void }
       <button
         type="submit"
         disabled={loading}
-        className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {loading ? 'Discovering...' : 'Discover Profiles'}
       </button>

@@ -138,7 +138,7 @@ export const workspace = pgTable('workspace', {
   slug: text('slug').notNull().unique(),
   description: text('description'),
   icon: text('icon'),
-  color: text('color').notNull().default('#5E6AD2'),
+  color: text('color').notNull().default('#F09040'),
   inviteCode: text('invite_code').notNull().unique(),
   ownerId: text('owner_id')
     .notNull()
@@ -201,7 +201,7 @@ export const groupTable = pgTable('group', {
     .references(() => workspace.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
-  color: text('color').notNull().default('#5E6AD2'),
+  color: text('color').notNull().default('#F09040'),
   createdById: text('created_by_id')
     .notNull()
     .references(() => user.id),

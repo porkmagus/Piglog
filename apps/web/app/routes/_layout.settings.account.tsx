@@ -83,7 +83,7 @@ export default function AccountSettingsPage() {
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
@@ -91,7 +91,7 @@ export default function AccountSettingsPage() {
             {emailSuccess && <div className="text-sm text-green-400">{emailSuccess}</div>}
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+              className="px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors"
             >
               Update Email
             </button>
@@ -107,7 +107,7 @@ export default function AccountSettingsPage() {
                 type="password"
                 value={passwords.current}
                 onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
               />
             </div>
@@ -117,7 +117,7 @@ export default function AccountSettingsPage() {
                 type="password"
                 value={passwords.new}
                 onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
                 minLength={8}
               />
@@ -128,7 +128,7 @@ export default function AccountSettingsPage() {
                 type="password"
                 value={passwords.confirm}
                 onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 required
                 minLength={8}
               />
@@ -137,7 +137,7 @@ export default function AccountSettingsPage() {
             {passwordSuccess && <div className="text-sm text-green-400">{passwordSuccess}</div>}
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+              className="px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors"
             >
               Change Password
             </button>

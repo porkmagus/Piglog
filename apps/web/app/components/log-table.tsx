@@ -181,7 +181,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
   if (loading && !liveMode) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2A2A2A] border-t-[#5E6AD2]" />
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2A2A2A] border-t-[#F09040]" />
       </div>
     );
   }
@@ -193,7 +193,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
           {loadError ? (
             <>
               <p className="text-sm text-red-400">{loadError}</p>
-              <button onClick={loadLogs} className="mt-2 text-xs text-[#5E6AD2] hover:text-[#4f5ab8]">Retry</button>
+              <button onClick={loadLogs} className="mt-2 text-xs text-[#F09040] hover:text-[#D87830]">Retry</button>
             </>
           ) : (
             <>
@@ -250,7 +250,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
                   transform: `translateY(${virtualItem.start}px)`,
                 }}
                 className={`border-b border-[#2A2A2A]/30 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-[#5E6AD2]/10' : 'hover:bg-[#151515]'
+                  isSelected ? 'bg-[#F09040]/10' : 'hover:bg-[#151515]'
                 }`}
               >
                 <div
@@ -284,7 +284,7 @@ export default function LogTable({ searchQuery = '', timeRange }: LogTableProps)
                       {log.traceId && (
                         <div className="text-xs text-[#8A8F98] mb-2">
                           Trace ID:{' '}
-                          <span className="text-[#5E6AD2]">{log.traceId}</span>
+                          <span className="text-[#F09040]">{log.traceId}</span>
                         </div>
                       )}
                       {log.metadata ? (

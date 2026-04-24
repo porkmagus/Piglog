@@ -134,7 +134,7 @@ export default function SourcesPage() {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Source
@@ -153,7 +153,7 @@ export default function SourcesPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. production-api"
-                  className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                  className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                   autoFocus
                 />
               </div>
@@ -162,7 +162,7 @@ export default function SourcesPage() {
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
-                  className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                  className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                 >
                   <option value="http">HTTP JSON</option>
                   <option value="syslog">Syslog</option>
@@ -179,7 +179,7 @@ export default function SourcesPage() {
                   <select
                     value={snmpConfig.version}
                     onChange={(e) => setSnmpConfig({ ...snmpConfig, version: e.target.value })}
-                    className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                    className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                   >
                     <option value="v1">v1</option>
                     <option value="v2c">v2c</option>
@@ -193,7 +193,7 @@ export default function SourcesPage() {
                       value={snmpConfig.community}
                       onChange={(e) => setSnmpConfig({ ...snmpConfig, community: e.target.value })}
                       placeholder="public"
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     />
                   </div>
                 ) : (
@@ -203,7 +203,7 @@ export default function SourcesPage() {
                       value={snmpConfig.username}
                       onChange={(e) => setSnmpConfig({ ...snmpConfig, username: e.target.value })}
                       placeholder="SNMP user"
-                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                      className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                     />
                   </div>
                 )}
@@ -214,7 +214,7 @@ export default function SourcesPage() {
                       <select
                         value={snmpConfig.authProtocol}
                         onChange={(e) => setSnmpConfig({ ...snmpConfig, authProtocol: e.target.value })}
-                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       >
                         <option value="SHA">SHA</option>
                         <option value="MD5">MD5</option>
@@ -227,7 +227,7 @@ export default function SourcesPage() {
                         value={snmpConfig.authPassphrase}
                         onChange={(e) => setSnmpConfig({ ...snmpConfig, authPassphrase: e.target.value })}
                         placeholder="••••••••"
-                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       />
                     </div>
                     <div>
@@ -235,7 +235,7 @@ export default function SourcesPage() {
                       <select
                         value={snmpConfig.privacyProtocol}
                         onChange={(e) => setSnmpConfig({ ...snmpConfig, privacyProtocol: e.target.value })}
-                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       >
                         <option value="AES">AES</option>
                         <option value="DES">DES</option>
@@ -248,7 +248,7 @@ export default function SourcesPage() {
                         value={snmpConfig.privacyPassphrase}
                         onChange={(e) => setSnmpConfig({ ...snmpConfig, privacyPassphrase: e.target.value })}
                         placeholder="••••••••"
-                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+                        className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
                       />
                     </div>
                   </>
@@ -259,7 +259,7 @@ export default function SourcesPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors disabled:opacity-50"
               >
                 Create
               </button>

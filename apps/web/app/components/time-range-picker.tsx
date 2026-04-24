@@ -52,7 +52,7 @@ export default function TimeRangePicker({ value, onChange }: TimeRangePickerProp
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
           value
-            ? 'bg-[#5E6AD2]/15 text-[#5E6AD2] border border-[#5E6AD2]/20'
+            ? 'bg-[#F09040]/15 text-[#F09040] border border-[#F09040]/20'
             : 'text-[#8A8F98] bg-[#0D0D0D] border border-[#2A2A2A] hover:border-[#3A3A3A]'
         }`}
       >
@@ -79,7 +79,7 @@ export default function TimeRangePicker({ value, onChange }: TimeRangePickerProp
               onClick={() => selectPreset(preset.value, preset.label)}
               className={`w-full text-left px-3 py-2 text-xs transition-colors ${
                 value?.label === preset.label
-                  ? 'bg-[#5E6AD2]/10 text-[#5E6AD2]'
+                  ? 'bg-[#F09040]/10 text-[#F09040]'
                   : 'text-gray-300 hover:bg-[#1a1a1a]'
               }`}
             >

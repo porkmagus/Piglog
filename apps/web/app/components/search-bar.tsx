@@ -42,7 +42,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search logs.
       <div
         className={`flex items-center gap-2 px-3 h-9 rounded-md border transition-colors ${
           focused
-            ? 'border-[#5E6AD2] bg-[#151515]'
+            ? 'border-[#F09040] bg-[#151515]'
             : 'border-[#2A2A2A] bg-[#0D0D0D] hover:border-[#3A3A3A]'
         }`}
       >
@@ -62,7 +62,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search logs.
         />
 
         {parsed && parsed.clauses.length > 0 && (
-          <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#5E6AD2]/15 text-[#5E6AD2] border border-[#5E6AD2]/20 flex-shrink-0">
+          <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#F09040]/15 text-[#F09040] border border-[#F09040]/20 flex-shrink-0">
             {parsed.clauses.length}
           </span>
         )}
@@ -86,7 +86,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search logs.
       {showHelp && focused && !value && (
         <div className="absolute top-full left-0 mt-1 w-72 rounded-md border border-[#2A2A2A] bg-[#0D0D0D] shadow-lg z-50 overflow-hidden">
           <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#2A2A2A]">
-            <Terminal className="w-3.5 h-3.5 text-[#5E6AD2]" />
+            <Terminal className="w-3.5 h-3.5 text-[#F09040]" />
             <span className="text-xs font-medium text-gray-200">Query Syntax</span>
           </div>
           <div className="max-h-64 overflow-auto py-1">
@@ -100,7 +100,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search logs.
                 }}
                 className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[#151515] text-left"
               >
-                <code className="text-xs font-mono text-[#5E6AD2]">{hint.label}</code>
+                <code className="text-xs font-mono text-[#F09040]">{hint.label}</code>
                 <span className="text-[10px] text-[#8A8F98]">{hint.desc}</span>
               </button>
             ))}

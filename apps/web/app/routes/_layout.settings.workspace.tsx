@@ -73,7 +73,7 @@ export default function WorkspaceSettingsPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+              className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
               required
             />
           </div>
@@ -82,7 +82,7 @@ export default function WorkspaceSettingsPage() {
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#5E6AD2]"
+              className="w-full rounded-md border border-[#2A2A2A] bg-[#0D0D0D] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#F09040]"
               required
             />
             <p className="text-xs text-[#8A8F98] mt-1">Used in URLs and API requests.</p>
@@ -113,7 +113,7 @@ export default function WorkspaceSettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#5E6AD2] text-white text-sm font-medium hover:bg-[#4f5ab8] transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#F09040] text-white text-sm font-medium hover:bg-[#D87830] transition-colors disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save'}

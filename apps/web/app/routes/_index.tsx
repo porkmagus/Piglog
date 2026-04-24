@@ -24,9 +24,9 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-lg border border-[#2A2A2A] bg-[#111111] p-5 transition-colors hover:border-[#5E6AD2]/30">
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-[#5E6AD2]/10">
-        <Icon className="h-4.5 w-4.5 text-[#5E6AD2]" />
+    <div className="rounded-lg border border-[#2A2A2A] bg-[#111111] p-5 transition-colors hover:border-[#F09040]/30">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-[#F09040]/10">
+        <Icon className="h-4.5 w-4.5 text-[#F09040]" />
       </div>
       <h3 className="mb-1 text-sm font-medium text-gray-200">{title}</h3>
       <p className="text-sm leading-relaxed text-[#8A8F98]">{description}</p>
@@ -40,7 +40,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A2A]">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-[#5E6AD2]" />
+          <div className="w-6 h-6 rounded bg-[#F09040]" />
           <span className="font-semibold text-sm tracking-tight">Piglog</span>
         </div>
         <div className="flex items-center gap-3">
@@ -52,7 +52,7 @@ export default function LandingPage() {
           </Link>
           <Link
             to="/login"
-            className="rounded-md bg-[#5E6AD2] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+            className="rounded-md bg-[#F09040] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
           >
             Get started
           </Link>
@@ -63,12 +63,12 @@ export default function LandingPage() {
       <section className="px-6 pt-20 pb-16 text-center">
         <div className="mx-auto max-w-2xl">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#2A2A2A] bg-[#111111] px-3 py-1 text-xs text-[#8A8F98]">
-            <Zap className="h-3 w-3 text-[#5E6AD2]" />
+            <Zap className="h-3 w-3 text-[#F09040]" />
             Built on TimescaleDB for serious throughput
           </div>
           <h1 className="mb-4 text-4xl font-semibold tracking-tight sm:text-5xl">
             Log aggregation for{' '}
-            <span className="text-[#5E6AD2]">hackers</span>
+            <span className="text-[#F09040]">hackers</span>
           </h1>
           <p className="mb-8 text-lg text-[#8A8F98] leading-relaxed">
             Ingest from HTTP, Syslog, or file uploads. Query with token-based
@@ -78,7 +78,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-3">
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 rounded-md bg-[#5E6AD2] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-[#F09040] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
             >
               Start logging free
               <ArrowRight className="h-4 w-4" />
@@ -102,7 +102,7 @@ export default function LandingPage() {
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="flex items-center gap-3 rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-3">
-              <Wifi className="h-5 w-5 text-[#5E6AD2]" />
+              <Wifi className="h-5 w-5 text-[#F09040]" />
               <div>
                 <div className="text-sm font-medium">HTTP API</div>
                 <div className="text-xs text-[#8A8F98]">
@@ -111,7 +111,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-3">
-              <Server className="h-5 w-5 text-[#5E6AD2]" />
+              <Server className="h-5 w-5 text-[#F09040]" />
               <div>
                 <div className="text-sm font-medium">Syslog</div>
                 <div className="text-xs text-[#8A8F98]">
@@ -120,7 +120,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border border-[#2A2A2A] bg-[#111111] px-4 py-3">
-              <FileUp className="h-5 w-5 text-[#5E6AD2]" />
+              <FileUp className="h-5 w-5 text-[#F09040]" />
               <div>
                 <div className="text-sm font-medium">File Upload</div>
                 <div className="text-xs text-[#8A8F98]">
@@ -185,7 +185,7 @@ export default function LandingPage() {
           <div className="overflow-x-auto rounded-lg border border-[#2A2A2A] bg-[#111111]">
             <pre className="p-4 text-sm text-[#8A8F98]">
               <code>
-                <span className="text-[#5E6AD2]">curl</span>{' '}
+                <span className="text-[#F09040]">curl</span>{' '}
                 <span className="text-gray-400">-X POST</span>{' '}
                 <span className="text-gray-300">
                   https://api.piglog.dev/ingest
@@ -227,7 +227,7 @@ export default function LandingPage() {
           </p>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 rounded-md bg-[#5E6AD2] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+            className="inline-flex items-center gap-2 rounded-md bg-[#F09040] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
           >
             Create your workspace
             <ArrowRight className="h-4 w-4" />
@@ -239,7 +239,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#2A2A2A] px-6 py-6">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-[#5E6AD2]" />
+            <div className="w-4 h-4 rounded bg-[#F09040]" />
             <span className="text-xs text-[#8A8F98]">Piglog</span>
           </div>
           <span className="text-xs text-[#8A8F98]">

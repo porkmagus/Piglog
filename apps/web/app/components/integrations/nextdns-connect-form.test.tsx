@@ -31,8 +31,8 @@ const mockAuthContext = {
 };
 
 const mockWorkspaceContext = {
-  workspaces: [{ id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#5E6AD2' }],
-  activeWorkspace: { id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#5E6AD2' },
+  workspaces: [{ id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#F09040' }],
+  activeWorkspace: { id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#F09040' },
   setActiveWorkspace: vi.fn(),
   isLoading: false,
   refreshWorkspaces: vi.fn(),

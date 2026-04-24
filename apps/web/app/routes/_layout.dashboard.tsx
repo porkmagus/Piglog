@@ -67,7 +67,7 @@ export default function DashboardPage() {
           <p className="text-sm text-[#8A8F98]">No workspace selected.</p>
           <button
             onClick={() => navigate('/onboarding')}
-            className="rounded-md bg-[#5E6AD2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+            className="rounded-md bg-[#F09040] px-4 py-2 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
           >
             Create a workspace
           </button>
@@ -80,7 +80,7 @@ export default function DashboardPage() {
     return (
       <RequireAuth>
         <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2A2A2A] border-t-[#5E6AD2]" />
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2A2A2A] border-t-[#F09040]" />
         </div>
       </RequireAuth>
     );
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             <div className="mt-4 flex items-center justify-center gap-3">
               <button
                 onClick={loadData}
-                className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white hover:bg-[#4f5ab8] transition-colors"
+                className="rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white hover:bg-[#D87830] transition-colors"
               >
                 Retry
               </button>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
             <div className="mt-4 flex items-center justify-center gap-3">
               <button
                 onClick={() => navigate('/settings/sources')}
-                className="rounded-md bg-[#5E6AD2] px-3 py-2 text-sm font-medium text-white"
+                className="rounded-md bg-[#F09040] px-3 py-2 text-sm font-medium text-white"
               >
                 Add Source
               </button>
@@ -159,8 +159,8 @@ export default function DashboardPage() {
                 <AreaChart data={data.volume}>
                   <defs>
                     <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#5E6AD2" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#5E6AD2" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#F09040" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#F09040" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                   <Area
                     type="monotone"
                     dataKey="count"
-                    stroke="#5E6AD2"
+                    stroke="#F09040"
                     fill="url(#volumeGradient)"
                     strokeWidth={2}
                   />

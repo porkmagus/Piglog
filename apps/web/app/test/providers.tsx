@@ -30,8 +30,8 @@ interface MockWorkspaceProviderProps {
 }
 
 export function MockWorkspaceProvider({
-  workspaces = [{ id: 'ws1', name: 'Test Workspace', slug: 'test', role: 'owner', color: '#5E6AD2' }],
-  activeWorkspace = { id: 'ws1', name: 'Test Workspace', slug: 'test', role: 'owner', color: '#5E6AD2' },
+  workspaces = [{ id: 'ws1', name: 'Test Workspace', slug: 'test', role: 'owner', color: '#F09040' }],
+  activeWorkspace = { id: 'ws1', name: 'Test Workspace', slug: 'test', role: 'owner', color: '#F09040' },
   children,
 }: MockWorkspaceProviderProps) {
   return (

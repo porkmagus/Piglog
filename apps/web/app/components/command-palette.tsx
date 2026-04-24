@@ -147,7 +147,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                 onClick={cmd.action}
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={`flex items-center justify-between w-full px-3 py-2 text-sm transition-colors ${
-                  index === selectedIndex ? 'bg-[#5E6AD2]/10 text-gray-100' : 'text-[#8A8F98] hover:bg-[#1a1a1a]'
+                  index === selectedIndex ? 'bg-[#F09040]/10 text-gray-100' : 'text-[#8A8F98] hover:bg-[#1a1a1a]'
                 }`}
               >
                 <div className="flex items-center gap-2">
