@@ -5,7 +5,12 @@ import { runIntegrationSyncJob } from '../modules/integrations/integrations.serv
 new Worker(
   'integration-sync',
   async (job) => {
-    await runIntegrationSyncJob(job.data.integrationId);
+    try {
+      await runIntegrationSyncJob(job.data.integrationId);
+    } catch (err) {
+      console.error(`Integration sync job failed for ${job.data.integrationId}:`, err);
+      throw err;
+    }
   },
   { connection: redisConnection }
 );

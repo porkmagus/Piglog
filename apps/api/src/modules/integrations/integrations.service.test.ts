@@ -1,19 +1,112 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-describe('integration persistence', () => {
-  it('stores workspace-scoped integrations and child sources', () => {
-    const shape = {
+vi.mock('./connectors/index.js', () => ({
+  getConnector: vi.fn(),
+}));
+
+vi.mock('@piglog/db', () => {
+  const selectResult = [{
+    id: 'int_123',
+    workspaceId: 'ws_123',
+    provider: 'nextdns',
+    name: 'Test Integration',
+    status: 'CONNECTED',
+    config: {},
+    secret: 'sk_test',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }];
+  const sourceResult = [
+    { integrationId: 'int_123', sourceId: 'src_1', externalId: 'profile_a', externalName: 'Home', isEnabled: true },
+    { integrationId: 'int_123', sourceId: 'src_2', externalId: 'profile_b', externalName: 'Office', isEnabled: true },
+  ];
+  let selectMode = 'integration';
+
+  const mockDb = {
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockResolvedValue([]),
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockImplementation((table) => {
+      if (String(table).includes('integration_source')) selectMode = 'source';
+      else selectMode = 'integration';
+      return mockDb;
+    }),
+    where: vi.fn().mockImplementation(() => {
+      return Promise.resolve(selectMode === 'source' ? sourceResult : selectResult);
+    }),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockImplementation(() => ({
+      where: vi.fn().mockResolvedValue([]),
+    })),
+    delete: vi.fn().mockReturnThis(),
+    transaction: vi.fn().mockImplementation(async (fn) => {
+      const tx = {
+        insert: mockDb.insert,
+        values: mockDb.values,
+        update: mockDb.update,
+        set: mockDb.set,
+        where: mockDb.where,
+      };
+      await fn(tx);
+    }),
+  };
+
+  return {
+    db: mockDb,
+    integration: {},
+    integrationSource: {},
+    logSource: {},
+    eq: vi.fn().mockReturnValue({}),
+  };
+});
+
+vi.mock('../../logs/logs.service.js', () => ({
+  ingestLogs: vi.fn().mockResolvedValue({ accepted: 5 }),
+}));
+
+import * as connectorIndex from './connectors/index.js';
+import { createIntegrationWithSources } from './integrations.service.js';
+
+const mockDiscoverEntities = vi.fn().mockResolvedValue([
+  { id: 'profile_a', name: 'Home' },
+  { id: 'profile_b', name: 'Office' },
+]);
+
+describe('createIntegrationWithSources', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDiscoverEntities.mockResolvedValue([
+      { id: 'profile_a', name: 'Home' },
+      { id: 'profile_b', name: 'Office' },
+    ]);
+    vi.mocked(connectorIndex.getConnector).mockReturnValue({
+      provider: 'nextdns',
+      discoverEntities: mockDiscoverEntities,
+    } as any);
+  });
+
+  it('creates integration with hidden sources for selected profiles', async () => {
+    const result = await createIntegrationWithSources({
       workspaceId: 'ws_123',
       provider: 'nextdns',
-      status: 'CONNECTED',
-      sourceCount: 2,
-    };
-
-    expect(shape).toMatchObject({
-      workspaceId: 'ws_123',
-      provider: 'nextdns',
-      status: 'CONNECTED',
-      sourceCount: 2,
+      name: 'My NextDNS',
+      config: { profileIds: ['profile_a', 'profile_b'], backfillHours: 24 },
+      secret: 'sk_test',
     });
+
+    expect(mockDiscoverEntities).toHaveBeenCalled();
+    expect(result).toBeDefined();
+  });
+
+  it('throws on unknown provider', async () => {
+    vi.mocked(connectorIndex.getConnector).mockReturnValue(undefined);
+
+    await expect(createIntegrationWithSources({
+      workspaceId: 'ws_123',
+      provider: 'nextdns',
+      name: 'Test',
+      config: { profileIds: ['p1'], backfillHours: 24 },
+      secret: 'sk_test',
+    })).rejects.toThrow('Unknown integration provider');
   });
 });

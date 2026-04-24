@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth, type AuthenticatedRequest } from '../../plugins/auth.js';
 import { extractWorkspace, type WorkspaceRequest } from '../../middleware/workspace.js';
-import { listIntegrations, createIntegrationWithSources } from './integrations.service.js';
+import { listIntegrations, createIntegrationWithSources, disableIntegration, deleteIntegration } from './integrations.service.js';
 import { createIntegrationSchema } from './integrations.schemas.js';
 import { getConnector } from './connectors/index.js';
 
@@ -31,6 +31,32 @@ export default async function integrationRoutes(app: FastifyInstance) {
       return reply.status(201).send(integration);
     } catch (err) {
       return reply.status(500).send({ error: err instanceof Error ? err.message : 'Failed to create integration' });
+    }
+  });
+
+  app.patch('/:id/disable', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const { id } = request.params as { id: string };
+    try {
+      await disableIntegration(id);
+      return { ok: true };
+    } catch (err) {
+      return reply.status(404).send({ error: err instanceof Error ? err.message : 'Integration not found' });
+    }
+  });
+
+  app.delete('/:id', async (request: AuthenticatedRequest & WorkspaceRequest, reply) => {
+    await extractWorkspace(request, reply);
+    if (reply.sent) return;
+
+    const { id } = request.params as { id: string };
+    try {
+      await deleteIntegration(id);
+      return reply.status(204).send();
+    } catch (err) {
+      return reply.status(404).send({ error: err instanceof Error ? err.message : 'Integration not found' });
     }
   });
 

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import DashboardPage from './_layout.dashboard';
@@ -36,15 +36,17 @@ function renderWithProviders(ui: React.ReactElement) {
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
     json: () => Promise.resolve({ volume: [], levels: [], services: [], hosts: [], total24h: 0 }),
+    text: () => Promise.resolve(''),
   }));
 });
 
 describe('DashboardPage empty state', () => {
-  it('offers add source and add integration actions', async () => {
+  it('offers add source and add integration actions', () => {
     renderWithProviders(<DashboardPage />);
 
-    await vi.waitFor(() => {
+    waitFor(() => {
       expect(screen.getByRole('button', { name: /add source/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /add integration/i })).toBeInTheDocument();
     });

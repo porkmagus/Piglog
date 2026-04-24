@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router';
 import IntegrationsPage from './_layout.settings.integrations';
 import { renderRoute } from '../test/render';
 import { AuthContext } from '../lib/auth-client';
+import { WorkspaceContext } from '../lib/workspace';
 
 const mockAuthContext = {
   user: { id: 'u1', email: 'test@example.com', name: 'Test', image: null },
@@ -13,11 +14,21 @@ const mockAuthContext = {
   logout: vi.fn(),
 };
 
+const mockWorkspaceContext = {
+  workspaces: [{ id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#5E6AD2' }],
+  activeWorkspace: { id: 'w1', name: 'Test Workspace', slug: 'test', role: 'OWNER', color: '#5E6AD2' },
+  setActiveWorkspace: vi.fn(),
+  isLoading: false,
+  refreshWorkspaces: vi.fn(),
+};
+
 function renderWithProviders(ui: React.ReactElement) {
   return renderRoute(
     <MemoryRouter>
       <AuthContext.Provider value={mockAuthContext}>
-        {ui}
+        <WorkspaceContext.Provider value={mockWorkspaceContext}>
+          {ui}
+        </WorkspaceContext.Provider>
       </AuthContext.Provider>
     </MemoryRouter>
   );

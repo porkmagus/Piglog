@@ -1,13 +1,24 @@
 import type { IntegrationConnector, DiscoveredIntegrationEntity } from './types.js';
+import { ingestLogs } from '../../logs/logs.service.js';
+import type { LogLevel } from '@piglog/db';
 
-export function mapNextDnsEventToPiglogLog(event: {
+interface NextDnsProfile {
+  id: string;
+  name: string;
+}
+
+interface NextDnsLogEvent {
+  id: string;
   timestamp: string;
   status: string;
   query: string;
   deviceName?: string;
   clientIp?: string;
-}) {
-  const level = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
+  [key: string]: unknown;
+}
+
+export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
+  const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
 
   return {
     timestamp: event.timestamp,
@@ -38,9 +49,9 @@ export const nextDnsConnector: IntegrationConnector = {
     if (!res.ok) {
       throw new Error(`NextDNS discovery failed: ${res.status} ${res.statusText}`);
     }
-    const data: any = await res.json();
-    const profiles = Array.isArray(data) ? data : (data.results || []);
-    return profiles.map((p: { id: string; name: string }) => ({
+    const data: unknown = await res.json();
+    const profiles: NextDnsProfile[] = Array.isArray(data) ? data : [];
+    return profiles.map((p) => ({
       id: p.id,
       name: p.name || p.id,
     }));
@@ -60,27 +71,35 @@ export const nextDnsConnector: IntegrationConnector = {
     }
 
     const since = (params.state.cursor as string) || undefined;
-    const res = await fetch(
-      `https://api.nextdns.io/profile/${profileId}/log${since ? `?since=${since}` : ''}`,
-      {
-        headers: { 'Authorization': `Bearer ${params.secret}` },
-      }
-    );
+    const url = since
+      ? `https://api.nextdns.io/profile/${profileId}/log?since=${since}`
+      : `https://api.nextdns.io/profile/${profileId}/log`;
+
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${params.secret}` },
+    });
 
     if (!res.ok) {
       throw new Error(`NextDNS sync failed: ${res.status} ${res.statusText}`);
     }
 
-    const rawLogs = await res.json();
-    const logs: any[] = Array.isArray(rawLogs) ? rawLogs : [];
-    const accepted = Array.isArray(logs) ? logs.length : 0;
+    const rawLogs: unknown = await res.json();
+    const logs: NextDnsLogEvent[] = Array.isArray(rawLogs) ? rawLogs : [];
 
+    if (logs.length === 0) {
+      return { nextState: params.state, accepted: 0 };
+    }
+
+    const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
+    const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
+
+    const lastLog = logs[logs.length - 1];
     return {
       nextState: {
         ...params.state,
-        cursor: logs.length > 0 ? (logs[logs.length - 1] as any)?.streamId : params.state.cursor,
+        cursor: lastLog.id,
       },
-      accepted,
+      accepted: result.accepted,
     };
   },
 };

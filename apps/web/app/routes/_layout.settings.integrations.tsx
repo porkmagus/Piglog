@@ -1,5 +1,6 @@
 import { RequireAuth } from '~/lib/auth-client';
 import { NextDnsConnectForm } from '~/components/integrations/nextdns-connect-form';
+import { IntegrationList } from '~/components/integrations/integration-list';
 
 export default function IntegrationsPage() {
   return (
@@ -11,6 +12,7 @@ export default function IntegrationsPage() {
             Piglog connects to external services and syncs logs into your workspace.
           </p>
         </div>
+        <IntegrationList />
         <section className="rounded-lg border border-[#2A2A2A] bg-[#151515] p-4">
           <h2 className="text-sm font-medium mb-3">Connect NextDNS</h2>
           <NextDnsConnectForm />

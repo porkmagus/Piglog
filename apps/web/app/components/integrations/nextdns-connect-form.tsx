@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useWorkspace } from '~/lib/workspace';
+import { fetchApi } from '~/lib/api';
 
 export function NextDnsConnectForm() {
+  const { activeWorkspace } = useWorkspace();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -10,18 +15,14 @@ export function NextDnsConnectForm() {
 
   async function handleDiscover(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !apiKey.trim()) return;
+    if (!name.trim() || !apiKey.trim() || !activeWorkspace) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const ws = localStorage.getItem('piglog:activeWorkspace');
-      const res = await fetch(`${API_URL}/workspaces/${ws}/integrations/discover`, {
+      const data = await fetchApi(`/workspaces/${activeWorkspace.id}/integrations/discover`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           provider: 'nextdns',
           name,
@@ -29,13 +30,6 @@ export function NextDnsConnectForm() {
           config: { profileIds: [''], backfillHours: 24 },
         }),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Discovery failed');
-      }
-
-      const data = await res.json();
       setProfiles(data.entities);
       setSelectedProfiles(new Set(data.entities.map((p: { id: string }) => p.id)));
     } catch (err) {
@@ -46,18 +40,14 @@ export function NextDnsConnectForm() {
   }
 
   async function handleConnect() {
-    if (selectedProfiles.size === 0) return;
+    if (selectedProfiles.size === 0 || !activeWorkspace) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const ws = localStorage.getItem('piglog:activeWorkspace');
-      const res = await fetch(`${API_URL}/workspaces/${ws}/integrations`, {
+      await fetchApi(`/workspaces/${activeWorkspace.id}/integrations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           provider: 'nextdns',
           name,
@@ -68,13 +58,7 @@ export function NextDnsConnectForm() {
           },
         }),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Connection failed');
-      }
-
-      window.location.reload();
+      navigate('/settings/integrations');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed');
     } finally {
