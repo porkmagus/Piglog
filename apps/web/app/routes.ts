@@ -14,6 +14,7 @@ export default [
       route("ingestion", "routes/_layout.settings.ingestion.tsx"),
       route("keys", "routes/_layout.settings.keys.tsx"),
       route("sources", "routes/_layout.settings.sources.tsx"),
+      route("integrations", "routes/_layout.settings.integrations.tsx"),
       route("alerts", "routes/_layout.settings.alerts.tsx"),
       route("team", "routes/_layout.settings.team.tsx"),
     ]),

@@ -119,7 +119,7 @@ export default function SourcesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-lg font-semibold">Sources</h1>
-            <p className="text-sm text-[#8A8F98]">Configure log ingestion endpoints</p>
+            <p className="text-sm text-[#8A8F98]">Sources are push-style ingestion endpoints such as HTTP JSON, Syslog, Vector, and Filebeat.</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
