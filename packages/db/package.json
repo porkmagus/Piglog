@@ -23,11 +23,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "bullmq": "5.76.2",
     "drizzle-orm": "0.45.2",
     "postgres": "3.4.9"
   },
   "devDependencies": {
-    "drizzle-kit": "0.31.10",
+    "drizzle-kit": "^0.18.1",
     "tsx": "4.21.0",
     "typescript": "6.0.3"
   }
