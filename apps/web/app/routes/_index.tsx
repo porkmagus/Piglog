@@ -202,14 +202,7 @@ export default function LandingPage() {
                 </span>{' '}
                 {'\n'}
                 {'  '}<span className="text-gray-400">-d</span>{' '}
-                <span className="text-gray-300">'{'{'}</span>
-                {'\n'}
-                {'    '}"logs": [{'\n'}
-                {'      '}"service": "api",{'\n'}
-                {'      '}"level": "ERROR",{'\n'}
-                {'      '}"message": "Connection refused to db:5432"{'\n'}
-                {'    '}]{'\n'}
-                {'  '}<span className="text-gray-300">{'}'}'</span>
+                <span className="text-gray-300">{`'{\n    "logs": [{\n      "service": "api",\n      "level": "ERROR",\n      "message": "Connection refused to db:5432"\n    }]\n  }'`}</span>
               </code>
             </pre>
           </div>

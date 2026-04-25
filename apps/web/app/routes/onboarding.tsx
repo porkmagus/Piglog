@@ -24,10 +24,10 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user && step === 1 && !createdWorkspace && workspaces.length > 0) {
+    if (user && step === 1 && !createdWorkspace && !loading && workspaces.length > 0) {
       navigate('/dashboard', { replace: true });
     }
-  }, [createdWorkspace, navigate, step, user, workspaces.length]);
+  }, [createdWorkspace, navigate, step, user, workspaces.length, loading]);
 
   async function createWorkspace(e: React.FormEvent) {
     e.preventDefault();
