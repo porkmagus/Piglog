@@ -23,6 +23,7 @@ interface NextDnsLogEvent {
 
 const SYNC_BATCH_SIZE = 500;
 const FETCH_TIMEOUT_MS = 30_000;
+const MAX_PAGES_PER_SYNC = 20;
 
 export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
@@ -100,6 +101,8 @@ export const nextDnsConnector: IntegrationConnector = {
       return { nextState: params.state, accepted: 0 };
     }
 
+    log.info(`Starting NextDNS sync for profile ${profileId}`);
+
     const backfillHours = (params.config.backfillHours as number) || 24;
     const fromDate = new Date(Date.now() - backfillHours * 60 * 60 * 1000);
     const fromParam = fromDate.toISOString();
@@ -108,22 +111,36 @@ export const nextDnsConnector: IntegrationConnector = {
     let profileCursor = cursor;
     let totalAccepted = 0;
     let firstPage = true;
+    let pagesFetched = 0;
 
     do {
+      if (pagesFetched >= MAX_PAGES_PER_SYNC) {
+        log.info(`Reached MAX_PAGES_PER_SYNC (${MAX_PAGES_PER_SYNC}) for profile ${profileId}. Stopping sync for this cycle.`);
+        break;
+      }
+
       const pageCursor = firstPage ? undefined : profileCursor;
       const from = firstPage ? fromParam : undefined;
       firstPage = false;
 
+      log.info(`Fetching page for ${profileId} (cursor: ${pageCursor || 'none'}, from: ${from || 'none'})`);
       const { logs, nextCursor } = await fetchNextDnsLogs(profileId, params.secret, pageCursor, from);
+      pagesFetched++;
 
-      if (logs.length === 0) break;
+      if (logs.length === 0) {
+        log.info(`No more logs for ${profileId}`);
+        break;
+      }
 
+      log.info(`Received ${logs.length} logs for ${profileId}`);
       const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
       const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
       totalAccepted += result.accepted;
 
       profileCursor = nextCursor || undefined;
     } while (profileCursor);
+
+    log.info(`Completed NextDNS sync for profile ${profileId}: ${totalAccepted} logs accepted`);
 
     return {
       nextState: {

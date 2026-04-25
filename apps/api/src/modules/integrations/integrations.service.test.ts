@@ -34,12 +34,18 @@ vi.mock('@piglog/db', () => {
     values: vi.fn().mockResolvedValue([]),
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockImplementation((table) => {
-      if (String(table).includes('integration_source')) selectMode = 'source';
-      else selectMode = 'integration';
+      const tableStr = String(table);
+      if (tableStr.includes('integrationSource') || tableStr.includes('integration_source')) {
+        selectMode = 'source';
+      } else {
+        selectMode = 'integration';
+      }
       return mockDb;
     }),
     where: vi.fn().mockImplementation(() => {
-      return Promise.resolve(selectMode === 'source' ? sourceResult : selectResult);
+      if (selectMode === 'source') return Promise.resolve(sourceResult);
+      if (selectMode === 'integration') return Promise.resolve(selectResult);
+      return Promise.resolve([]);
     }),
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockImplementation(() => ({
@@ -72,7 +78,7 @@ vi.mock('../../logs/logs.service.js', () => ({
 }));
 
 import * as connectorIndex from './connectors/index.js';
-import { createIntegrationWithSources } from './integrations.service.js';
+import { createIntegrationWithSources, runIntegrationSyncJob } from './integrations.service.js';
 
 const mockDiscoverEntities = vi.fn().mockResolvedValue([
   { id: 'profile_a', name: 'Home' },
@@ -115,5 +121,46 @@ describe('createIntegrationWithSources', () => {
       config: { profileIds: ['p1'], backfillHours: 24 },
       secret: 'sk_test',
     })).rejects.toThrow('Unknown integration provider');
+  });
+});
+
+describe('runIntegrationSyncJob', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    const mockSync = vi.fn().mockResolvedValue({
+      nextState: { cursor: 'next_cursor' },
+      accepted: 10,
+    });
+
+    vi.mocked(connectorIndex.getConnector).mockReturnValue({
+      provider: 'nextdns',
+      sync: mockSync,
+    } as any);
+  });
+
+  it('syncs all enabled sources for an integration', async () => {
+    const connector = connectorIndex.getConnector('nextdns');
+    const mockSync = vi.fn().mockResolvedValue({
+      nextState: { cursor: 'next_cursor' },
+      accepted: 10,
+    });
+    
+    vi.mocked(connectorIndex.getConnector).mockReturnValue({
+      provider: 'nextdns',
+      sync: mockSync,
+    } as any);
+
+    await runIntegrationSyncJob('int_123');
+
+    expect(mockSync).toHaveBeenCalledTimes(2);
+    expect(mockSync).toHaveBeenCalledWith(expect.objectContaining({
+      sourceId: 'src_1',
+      config: expect.objectContaining({ profileId: 'profile_a' }),
+    }));
+    expect(mockSync).toHaveBeenCalledWith(expect.objectContaining({
+      sourceId: 'src_2',
+      config: expect.objectContaining({ profileId: 'profile_b' }),
+    }));
   });
 });

@@ -5,7 +5,9 @@ import { getConnector } from './connectors/index.js';
 import { integrationSyncQueue } from '../../queues/index.js';
 import type { CreateIntegrationInput } from './integrations.schemas.js';
 import { startStream, stopStream } from './stream.manager.js';
+import { createLogger } from '../../lib/logger.js';
 
+const log = createLogger('integration-sync');
 const SYNC_INTERVAL_MS = 3 * 60 * 1000;
 
 export async function listIntegrations(workspaceId: string) {
@@ -158,12 +160,15 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
         )
       );
 
+    log.info(`Sync job started for integration ${integrationId}. Found ${sources.length} enabled sources.`);
+
     let totalAccepted = 0;
     let anyError = false;
     const cfg = (int.config && typeof int.config === 'object') ? (int.config as Record<string, unknown>) : {};
 
     for (const is of sources) {
       try {
+        log.info(`Syncing source ${is.sourceId} (${is.externalName})`);
         await db
           .update(integrationSource)
           .set({ status: 'SYNCING' })
@@ -180,6 +185,7 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
           state: sourceState,
         });
         totalAccepted += result.accepted;
+        log.info(`Source ${is.sourceId} synced: ${result.accepted} logs accepted`);
 
         /* Persist cursor per source */
         const nextState = result.nextState as Record<string, unknown> || {};
@@ -192,6 +198,7 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
           .where(eq(integrationSource.id, is.id));
       } catch (sourceErr) {
         anyError = true;
+        log.error(`Error syncing source ${is.sourceId}: ${sourceErr instanceof Error ? sourceErr.message : String(sourceErr)}`);
         await db
           .update(integrationSource)
           .set({ status: 'ERROR' })
