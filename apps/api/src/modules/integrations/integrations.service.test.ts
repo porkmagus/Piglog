@@ -66,9 +66,9 @@ vi.mock('@piglog/db', () => {
 
   return {
     db: mockDb,
-    integration: {},
-    integrationSource: {},
-    logSource: {},
+    integration: { toString: () => 'integration' },
+    integrationSource: { toString: () => 'integrationSource' },
+    logSource: { toString: () => 'logSource' },
     eq: vi.fn().mockReturnValue({}),
   };
 });
