@@ -10,6 +10,9 @@ import { createLogger } from '../../lib/logger.js';
 const log = createLogger('integration-sync');
 const SYNC_INTERVAL_MS = 3 * 60 * 1000;
 
+/** Prevent concurrent syncs for the same integration (e.g., recurring + initial overlapping). */
+const activeSyncs = new Set<string>();
+
 export async function listIntegrations(workspaceId: string) {
   const integrations = await db
     .select()
@@ -125,6 +128,12 @@ export async function createIntegrationWithSources(input: CreateIntegrationInput
 }
 
 export async function runIntegrationSyncJob(integrationId: string): Promise<void> {
+  // Guard: skip if a sync for this integration is already running
+  if (activeSyncs.has(integrationId)) {
+    log.debug(`Sync already in progress for ${integrationId}, skipping`);
+    return;
+  }
+
   const [int] = await db
     .select()
     .from(integration)
@@ -144,12 +153,17 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
     return;
   }
 
+  activeSyncs.add(integrationId);
+
+  // Stop live stream during sync to avoid double-ingestion of the same logs
+  stopStream(integrationId);
+
   await db
     .update(integration)
     .set({ status: 'SYNCING', updatedAt: new Date() })
     .where(eq(integration.id, integrationId));
 
-    try {
+  try {
     const sources = await db
       .select()
       .from(integrationSource)
@@ -160,7 +174,7 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
         )
       );
 
-    log.info(`Sync job started for integration ${integrationId}. Found ${sources.length} enabled sources.`);
+    log.debug(`Sync started for ${integrationId}: ${sources.length} sources`);
 
     let totalAccepted = 0;
     let anyError = false;
@@ -168,7 +182,6 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
 
     for (const is of sources) {
       try {
-        log.info(`Syncing source ${is.sourceId} (${is.externalName})`);
         await db
           .update(integrationSource)
           .set({ status: 'SYNCING' })
@@ -185,9 +198,7 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
           state: sourceState,
         });
         totalAccepted += result.accepted;
-        log.info(`Source ${is.sourceId} synced: ${result.accepted} logs accepted`);
 
-        /* Persist cursor per source */
         const nextState = result.nextState as Record<string, unknown> || {};
         if (!cfg.syncState) (cfg as Record<string, unknown>).syncState = {};
         (cfg.syncState as Record<string, Record<string, unknown>>)[is.sourceId] = nextState;
@@ -216,7 +227,9 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
       })
       .where(eq(integration.id, integrationId));
 
-    /* Start real-time stream after successful sync */
+    log.debug(`Sync finished for ${integrationId}: ${totalAccepted} logs accepted`);
+
+    /* Restart real-time stream after successful sync */
     if (!anyError) {
       startStream(integrationId);
     }
@@ -228,7 +241,6 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
       .set({ status: 'ERROR', config: cfg, updatedAt: new Date() })
       .where(eq(integration.id, integrationId));
 
-    /* Mark all enabled sources as ERROR on catastrophic failure */
     await db
       .update(integrationSource)
       .set({ status: 'ERROR' })
@@ -240,6 +252,8 @@ export async function runIntegrationSyncJob(integrationId: string): Promise<void
       );
 
     throw err;
+  } finally {
+    activeSyncs.delete(integrationId);
   }
 }
 
@@ -263,7 +277,13 @@ export async function enableIntegration(integrationId: string): Promise<void> {
     .set({ isEnabled: true, status: 'CONNECTED' })
     .where(eq(integrationSource.integrationId, integrationId));
 
-  /* Re-schedule periodic sync */
+  /* Re-schedule periodic sync — remove any stale repeatable first */
+  const existing = await integrationSyncQueue.getRepeatableJobs();
+  for (const job of existing) {
+    if (job.id === `sync-${integrationId}`) {
+      await integrationSyncQueue.removeRepeatableByKey(job.key);
+    }
+  }
   await integrationSyncQueue.add(
     'sync',
     { integrationId },
@@ -297,8 +317,13 @@ export async function disableIntegration(integrationId: string): Promise<void> {
   /* Stop real-time stream */
   stopStream(integrationId);
 
-  /* Cancel scheduled sync */
-  await integrationSyncQueue.removeRepeatableByKey(`sync-${integrationId}`);
+  /* Cancel scheduled sync — find actual repeatable key first */
+  const existing = await integrationSyncQueue.getRepeatableJobs();
+  for (const job of existing) {
+    if (job.id === `sync-${integrationId}`) {
+      await integrationSyncQueue.removeRepeatableByKey(job.key);
+    }
+  }
 }
 
 export async function deleteIntegration(integrationId: string): Promise<void> {
@@ -317,8 +342,13 @@ export async function deleteIntegration(integrationId: string): Promise<void> {
   /* Stop real-time stream */
   stopStream(integrationId);
 
-  /* Cancel scheduled sync */
-  await integrationSyncQueue.removeRepeatableByKey(`sync-${integrationId}`);
+  /* Cancel scheduled sync — find actual repeatable key first */
+  const existing = await integrationSyncQueue.getRepeatableJobs();
+  for (const job of existing) {
+    if (job.id === `sync-${integrationId}`) {
+      await integrationSyncQueue.removeRepeatableByKey(job.key);
+    }
+  }
 
   await db
     .delete(integration)

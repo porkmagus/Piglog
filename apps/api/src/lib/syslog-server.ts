@@ -1,9 +1,12 @@
-import { createSocket, type Socket } from 'node:dgram';
-import { createServer, type Server } from 'node:net';
+import { createSocket } from 'node:dgram';
+import { createServer } from 'node:net';
 import { parseSyslogMessage } from './syslog.js';
 import { ingestLogs } from '../modules/logs/logs.service.js';
 import { db, logSource } from '@piglog/db';
 import { eq, and, isNull } from 'drizzle-orm';
+import { createLogger } from './logger.js';
+
+const log = createLogger('syslog');
 
 interface SyslogServerOptions {
   udpPort?: number;
@@ -30,30 +33,53 @@ function severityToLevel(severityName: string): 'DEBUG' | 'INFO' | 'WARN' | 'ERR
   }
 }
 
+// ---------------------------------------------------------------------------
+// Source cache — avoids a DB query per incoming syslog message.
+// TTL: 30 seconds. Refreshed lazily on miss.
+// ---------------------------------------------------------------------------
+const SOURCE_CACHE_TTL_MS = 30_000;
+let cachedSources: Array<{
+  id: string;
+  workspaceId: string;
+  name: string;
+  config: Record<string, unknown> | null;
+}> | null = null;
+let cacheTimestamp = 0;
+
+async function getSyslogSources() {
+  const now = Date.now();
+  if (cachedSources && now - cacheTimestamp < SOURCE_CACHE_TTL_MS) {
+    return cachedSources;
+  }
+  const rows = await db.query.logSource.findMany({
+    where: and(eq(logSource.type, 'syslog'), isNull(logSource.deletedAt)),
+  });
+  cachedSources = rows.map((s) => ({
+    id: s.id,
+    workspaceId: s.workspaceId,
+    name: s.name,
+    config: (s.config as Record<string, unknown> | null) ?? null,
+  }));
+  cacheTimestamp = now;
+  return cachedSources;
+}
+
 async function handleSyslogMessage(raw: string, remoteAddress: string) {
   try {
     const parsed = parseSyslogMessage(raw);
     if (!parsed) return;
 
-    // Find a syslog source to ingest into.
-    // For MVP: match by hostname if multiple syslog sources exist,
-    // otherwise use the single syslog source found.
-    const sources = await db.query.logSource.findMany({
-      where: and(eq(logSource.type, 'syslog'), isNull(logSource.deletedAt)),
-    });
+    const sources = await getSyslogSources();
 
-    if (sources.length === 0) {
-      // No syslog source configured — silently drop
-      return;
-    }
+    if (sources.length === 0) return;
 
     let source = sources[0];
     if (sources.length > 1) {
-      // Try to match by hostname against source name or config.host
+      const hostnameLower = parsed.hostname.toLowerCase();
       const match = sources.find((s) => {
-        if (s.name.toLowerCase() === parsed.hostname.toLowerCase()) return true;
-        const host = (s.config as Record<string, unknown> | null)?.host;
-        return typeof host === 'string' && host.toLowerCase() === parsed.hostname.toLowerCase();
+        if (s.name.toLowerCase() === hostnameLower) return true;
+        const host = s.config?.host;
+        return typeof host === 'string' && host.toLowerCase() === hostnameLower;
       });
       if (match) source = match;
     }
@@ -74,7 +100,7 @@ async function handleSyslogMessage(raw: string, remoteAddress: string) {
       },
     ]);
   } catch (err) {
-    console.error('[syslog] ingestion error:', err);
+    log.error(`Ingestion error from ${remoteAddress}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -84,45 +110,61 @@ export async function startSyslogServer(options: SyslogServerOptions = {}) {
   const host = options.host || process.env.SYSLOG_HOST || '0.0.0.0';
 
   const udpSocket = createSocket('udp4');
-  udpSocket.on('message', async (msg, rinfo) => {
-    const raw = msg.toString('utf-8');
-    await handleSyslogMessage(raw, rinfo.address);
+  udpSocket.on('message', (msg, rinfo) => {
+    // Fire-and-forget — don't await in a UDP callback to avoid backpressure
+    handleSyslogMessage(msg.toString('utf-8'), rinfo.address).catch(() => {});
   });
   udpSocket.on('error', (err) => {
-    console.error('[syslog] UDP socket error:', err.message);
+    log.error(`UDP socket error: ${err.message}`);
   });
 
   udpSocket.bind(udpPort, host, () => {
-    console.log(`Syslog UDP listener on ${host}:${udpPort}`);
+    log.info(`Syslog UDP listener on ${host}:${udpPort}`);
   });
 
+  const MAX_TCP_CONNECTIONS = parseInt(process.env.SYSLOG_MAX_TCP_CONNECTIONS || '100', 10);
+  let tcpConnectionCount = 0;
+
   const tcpServer = createServer((socket) => {
+    tcpConnectionCount++;
+    if (tcpConnectionCount > MAX_TCP_CONNECTIONS) {
+      log.warn(`TCP connection limit (${MAX_TCP_CONNECTIONS}) reached, rejecting ${socket.remoteAddress || 'unknown'}`);
+      socket.destroy();
+      return;
+    }
+
     let buffer = '';
     const remoteAddress = socket.remoteAddress || 'unknown';
-    socket.on('data', async (data) => {
+    const MAX_BUFFER_BYTES = 64 * 1024; // 64KB — drop connection if no newline seen
+
+    socket.on('close', () => { tcpConnectionCount--; });
+
+    socket.on('data', (data) => {
       buffer += data.toString('utf-8');
+      if (Buffer.byteLength(buffer, 'utf-8') > MAX_BUFFER_BYTES) {
+        log.warn(`TCP buffer overflow from ${remoteAddress}, dropping connection`);
+        socket.destroy();
+        return;
+      }
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
       for (const rawLine of lines) {
         const line = rawLine.replace(/\r$/, '');
         if (!line.trim()) continue;
-        await handleSyslogMessage(line, remoteAddress);
+        handleSyslogMessage(line, remoteAddress).catch(() => {});
       }
     });
     socket.on('error', (err) => {
-      console.error('[syslog] TCP socket error:', err.message);
-    });
-    socket.on('close', () => {
-      // socket closed
+      log.error(`TCP socket error from ${remoteAddress}: ${err.message}`);
     });
   });
 
   tcpServer.on('error', (err) => {
-    console.error('[syslog] TCP server error:', err.message);
+    log.error(`TCP server error: ${err.message}`);
   });
 
   tcpServer.listen(tcpPort, host, () => {
-    console.log(`Syslog TCP listener on ${host}:${tcpPort}`);
+    log.info(`Syslog TCP listener on ${host}:${tcpPort}`);
   });
 
   return { udpSocket, tcpServer };

@@ -22,11 +22,19 @@ interface StreamState {
 
 const activeStreams = new Map<string, { stream: ActiveStream; state: StreamState }>();
 
-function flushStreamState(integrationId: string): void {
+function flushStreamState(integrationId: string): Promise<void> {
   const entry = activeStreams.get(integrationId);
-  if (!entry) return;
+  if (!entry) return Promise.resolve();
   const { state } = entry;
-  if (!state.pendingState) return;
+  if (!state.pendingState) return Promise.resolve();
+
+  const pendingState = state.pendingState;
+  state.pendingState = null;
+  state.eventCount = 0;
+  if (state.batchTimer) {
+    clearTimeout(state.batchTimer);
+    state.batchTimer = null;
+  }
 
   const flush = async () => {
     const [int] = await db
@@ -43,23 +51,16 @@ function flushStreamState(integrationId: string): void {
       .where(eq(integrationSource.integrationId, integrationId));
     if (sources.length === 0) return;
 
-    (cfg.syncState as Record<string, Record<string, unknown>>)[sources[0].sourceId] = state.pendingState || {};
+    (cfg.syncState as Record<string, Record<string, unknown>>)[sources[0].sourceId] = pendingState;
     await db
       .update(integration)
       .set({ config: cfg, updatedAt: new Date() })
       .where(eq(integration.id, integrationId));
   };
 
-  flush().catch((err) => {
+  return flush().catch((err) => {
     log.error(`Failed to flush stream state: ${err instanceof Error ? err.message : String(err)}`);
   });
-
-  state.pendingState = null;
-  state.eventCount = 0;
-  if (state.batchTimer) {
-    clearTimeout(state.batchTimer);
-    state.batchTimer = null;
-  }
 }
 
 export function startStream(integrationId: string): void {
@@ -117,13 +118,15 @@ export function startStream(integrationId: string): void {
         streamState.eventCount++;
 
         if (streamState.eventCount >= STREAM_ID_BATCH_COUNT) {
-          flushStreamState(integrationId);
+          flushStreamState(integrationId).catch(() => {});
         } else if (!streamState.batchTimer) {
-          streamState.batchTimer = setTimeout(() => flushStreamState(integrationId), STREAM_ID_BATCH_INTERVAL_MS);
+          streamState.batchTimer = setTimeout(() => {
+            flushStreamState(integrationId).catch(() => {});
+          }, STREAM_ID_BATCH_INTERVAL_MS);
         }
       },
       onEnd: () => {
-        log.info(`Stream ended for integration ${integrationId}`);
+        log.debug(`Stream ended for integration ${integrationId}`);
       },
     });
 
@@ -139,9 +142,9 @@ export function startStream(integrationId: string): void {
 export function stopStream(integrationId: string): void {
   const entry = activeStreams.get(integrationId);
   if (entry) {
-    flushStreamState(integrationId);
     entry.stream.stop();
     activeStreams.delete(integrationId);
+    flushStreamState(integrationId).catch(() => {});
   }
 }
 

@@ -2,6 +2,9 @@ import snmp from 'net-snmp';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db, logSource } from '@piglog/db';
 import { ingestLogs } from '../modules/logs/logs.service.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('snmp');
 
 interface SnmpServerOptions {
   port?: number;
@@ -38,20 +41,43 @@ function isMissingRelationError(err: unknown): boolean {
   return false;
 }
 
+// ---------------------------------------------------------------------------
+// Source cache — avoids a DB query per incoming SNMP trap.
+// TTL: 30 seconds. Refreshed lazily on miss.
+// ---------------------------------------------------------------------------
+const SOURCE_CACHE_TTL_MS = 30_000;
+let cachedSnmpSources: Array<{
+  id: string;
+  workspaceId: string;
+  config: Record<string, unknown> | null;
+}> | null = null;
+let snmpCacheTimestamp = 0;
+
 async function getConfiguredSnmpSources() {
+  const now = Date.now();
+  if (cachedSnmpSources && now - snmpCacheTimestamp < SOURCE_CACHE_TTL_MS) {
+    return cachedSnmpSources;
+  }
+
   try {
-    return await db.query.logSource.findMany({
+    const rows = await db.query.logSource.findMany({
       where: and(eq(logSource.type, 'snmp'), isNull(logSource.deletedAt)),
     });
+    cachedSnmpSources = rows.map((s) => ({
+      id: s.id,
+      workspaceId: s.workspaceId,
+      config: (s.config as Record<string, unknown> | null) ?? null,
+    }));
+    snmpCacheTimestamp = now;
+    return cachedSnmpSources;
   } catch (err) {
     if (isMissingRelationError(err)) {
       if (!missingSchemaWarningShown) {
         missingSchemaWarningShown = true;
-        console.warn('[snmp] Skipping SNMP bootstrap because database schema is not ready yet.');
+        log.warn('Skipping SNMP bootstrap because database schema is not ready yet.');
       }
       return [];
     }
-
     throw err;
   }
 }
@@ -90,7 +116,7 @@ async function handleNotification(notification: any) {
   const sources = await getConfiguredSnmpSources();
 
   const source = sources.find((s) => {
-    const config = (s.config as Record<string, unknown> | null) || {};
+    const config = s.config || {};
     const host = config.host;
     return typeof host === 'string' && (host === senderIp || host === notification.rinfo?.address);
   });
@@ -142,7 +168,7 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
 
   const sources = await getConfiguredSnmpSources();
   if (sources.length === 0) {
-    console.log('[snmp] No configured sources available. SNMP trap listener not started.');
+    log.info('No configured sources available. SNMP trap listener not started.');
     return null;
   }
 
@@ -155,11 +181,11 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
     },
     (error: Error | null, notification: any) => {
       if (error) {
-        console.error('[snmp] Receive error:', error.message);
+        log.error(`Receive error: ${error.message}`);
         return;
       }
       handleNotification(notification).catch((err) => {
-        console.error('[snmp] Ingestion error:', err);
+        log.error(`Ingestion error: ${err instanceof Error ? err.message : String(err)}`);
       });
     }
   );
@@ -167,7 +193,7 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
   const authorizer = receiver.getAuthorizer();
 
   for (const source of sources) {
-    const config = (source.config as Record<string, unknown> | null) || {};
+    const config = source.config || {};
     const version = config.version;
 
     if (version === 'v1' || version === 'v2c') {
@@ -200,7 +226,7 @@ export async function startSnmpServer(options: SnmpServerOptions = {}) {
     }
   }
 
-  console.log(`SNMP trap listener on ${host}:${port} (${sources.length} source(s) configured)`);
+  log.info(`SNMP trap listener on ${host}:${port} (${sources.length} source(s) configured)`);
 
   return receiver;
 }

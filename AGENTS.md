@@ -301,6 +301,62 @@ If you cannot run a meaningful verification step, say so explicitly.
 - do not commit secrets, tokens, or provider credentials
 - be careful when editing Dockerfiles, migrations, or deployment settings because those have already been real failure points
 
+## Operational Safety Rules (Hard-Won Lessons)
+
+These rules exist because the production instance filled a 200 GB disk in 8 days.
+Every rule here has a concrete incident behind it.
+
+### Integration Sync: Never Reingest Old Logs
+
+When building any pull-based integration:
+
+- **always** persist a cursor (timestamp, offset, ID) after each successful sync
+- **always** use the cursor as the starting point on subsequent runs
+- **never** fall back to a wide time window on cursor miss — use a small initial window (e.g. 5 min)
+- stop any live-stream before running a full sync, restart after — never run both concurrently
+
+Relevant incident: NextDNS `from` param was ignored after the first sync run, causing 24h
+of DNS logs to be re-ingested every 3 minutes.
+
+### Ingestion Must Have Bounds
+
+- every workspace has a daily ingest cap (see `DAILY_INGEST_LIMIT` in `logs.service.ts`)
+- respect the limit and reject batches once hit — do not silently drop or queue indefinitely
+- new integrations must not bypass the `ingestLogs()` function
+
+### Retention Is Mandatory
+
+OSS TimescaleDB has no automatic retention. Without a cleanup job, tables grow forever.
+
+- `retention.worker.ts` runs `drop_chunks()` on a schedule (default 30 days)
+- configure via `RETENTION_DAYS` env var
+- when adding new hypertables, add them to the retention worker
+
+### Redis/BullMQ Hygiene
+
+- **every** BullMQ queue must have `removeOnComplete` and `removeOnFail` options
+- do not create unused queues — remove them if nothing consumes from them
+- do not spam alert/worker jobs per-item; batch or deduplicate (use `addBulk`, `delay`, dedup keys)
+- use the structured logger (`createLogger`) — never raw `console.log` in production code paths
+
+### Logger Must Filter by Level
+
+The logger (`lib/logger.ts`) respects `LOG_LEVEL` env var and defaults to `info` in production.
+
+- hot-path code should use `log.debug()` — it is a no-op in production
+- do not log inside tight loops unless the log is debug-level and filtered
+- do not log full payloads on every request — log summaries
+
+### Stream Reconnection Must Be Bounded
+
+Any real-time stream connection (WebSocket, SSE, polling) must have:
+
+- exponential backoff with jitter on reconnect
+- a maximum retry count (default 20) after which the stream stops and reports health status
+- buffered/batched event handling, not one-at-a-time DB writes
+
+## Default Agent Posture
+
 ## How To Use The Docs
 
 When a task matches an approved spec or plan:

@@ -3,7 +3,7 @@ import { ingestLogs } from '../../logs/logs.service.js';
 import type { LogLevel } from '@piglog/db';
 import { createLogger } from '../../../lib/logger.js';
 
-const log = createLogger('nextdns-stream');
+const log = createLogger('nextdns');
 
 interface NextDnsProfile {
   id: string;
@@ -24,6 +24,15 @@ interface NextDnsLogEvent {
 const SYNC_BATCH_SIZE = 500;
 const FETCH_TIMEOUT_MS = 30_000;
 const MAX_PAGES_PER_SYNC = 20;
+
+/** Stream batching: flush buffered events every N ms or when buffer reaches this count. */
+const STREAM_MAX_EVENT_BUFFER = 100;
+const STREAM_FLUSH_INTERVAL_MS = 5_000;
+
+/** Reconnect: exponential backoff with jitter, capped at RECONNECT_MAX_MS, give up after RECONNECT_MAX_ATTEMPTS. */
+const RECONNECT_BASE_MS = 5_000;
+const RECONNECT_MAX_MS = 5 * 60_000;
+const RECONNECT_MAX_ATTEMPTS = 20;
 
 export function mapNextDnsEventToPiglogLog(event: NextDnsLogEvent) {
   const level: LogLevel = event.status === 'blocked' ? 'WARN' : event.status === 'error' ? 'ERROR' : 'INFO';
@@ -101,13 +110,17 @@ export const nextDnsConnector: IntegrationConnector = {
       return { nextState: params.state, accepted: 0 };
     }
 
-    log.info(`Starting NextDNS sync for profile ${profileId}`);
-
-    const backfillHours = (params.config.backfillHours as number) || 24;
-    const fromDate = new Date(Date.now() - backfillHours * 60 * 60 * 1000);
-    const fromParam = fromDate.toISOString();
-
     const cursor = (params.state.cursor as string) || undefined;
+
+    // Only use a time-window `from` param on the very first sync (no saved cursor).
+    // On recurring syncs, always follow the cursor to avoid re-ingesting already-seen logs.
+    let fromParam: string | undefined;
+    if (!cursor) {
+      const backfillHours = (params.config.backfillHours as number) || 24;
+      fromParam = new Date(Date.now() - backfillHours * 60 * 60 * 1000).toISOString();
+      log.debug(`First sync for ${profileId}, backfill from ${fromParam}`);
+    }
+
     let profileCursor = cursor;
     let totalAccepted = 0;
     let firstPage = true;
@@ -115,32 +128,35 @@ export const nextDnsConnector: IntegrationConnector = {
 
     do {
       if (pagesFetched >= MAX_PAGES_PER_SYNC) {
-        log.info(`Reached MAX_PAGES_PER_SYNC (${MAX_PAGES_PER_SYNC}) for profile ${profileId}. Stopping sync for this cycle.`);
+        log.debug(`Reached MAX_PAGES_PER_SYNC for ${profileId}, will resume next cycle`);
         break;
       }
 
-      const pageCursor = firstPage ? undefined : profileCursor;
-      const from = firstPage ? fromParam : undefined;
+      const pageCursor = firstPage ? cursor : profileCursor;
+      const from = (firstPage && !cursor) ? fromParam : undefined;
       firstPage = false;
 
-      log.info(`Fetching page for ${profileId} (cursor: ${pageCursor || 'none'}, from: ${from || 'none'})`);
       const { logs, nextCursor } = await fetchNextDnsLogs(profileId, params.secret, pageCursor, from);
       pagesFetched++;
 
-      if (logs.length === 0) {
-        log.info(`No more logs for ${profileId}`);
-        break;
-      }
+      if (logs.length === 0) break;
 
-      log.info(`Received ${logs.length} logs for ${profileId}`);
       const mappedLogs = logs.map(mapNextDnsEventToPiglogLog);
       const result = await ingestLogs(params.workspaceId, params.sourceId, mappedLogs);
       totalAccepted += result.accepted;
 
+      // If ingestLogs rejected the batch (daily limit hit), stop immediately
+      // WITHOUT advancing the cursor past this page — so it gets retried next cycle.
+      if (result.accepted === 0) {
+        log.warn(`Daily limit reached for ${profileId}, stopping sync early (will retry this page next cycle)`);
+        break;
+      }
+
+      // Only advance cursor after a successful ingest
       profileCursor = nextCursor || undefined;
     } while (profileCursor);
 
-    log.info(`Completed NextDNS sync for profile ${profileId}: ${totalAccepted} logs accepted`);
+    log.debug(`Synced ${profileId}: ${totalAccepted} logs in ${pagesFetched} pages`);
 
     return {
       nextState: {
@@ -160,6 +176,68 @@ export const nextDnsConnector: IntegrationConnector = {
 
     const controller = new AbortController();
     let lastStreamId: string | null = (params.state.streamId as string) || null;
+    let reconnectAttempts = 0;
+
+    // Buffer stream events and flush in batches to avoid per-event DB inserts.
+    const eventBuffer: ReturnType<typeof mapNextDnsEventToPiglogLog>[] = [];
+    const STREAM_HARD_CAP = STREAM_MAX_EVENT_BUFFER * 10; // Drop events if flush keeps failing
+    let pendingState: Record<string, unknown> | null = null;
+    let flushTimer: ReturnType<typeof setInterval> | null = null;
+    let flushing = false; // Guard against concurrent flushes
+    let streamDailyHits = 0;
+    const STREAM_MAX_DAILY_REJECTIONS = 3;
+
+    async function flushBuffer() {
+      if (flushing || eventBuffer.length === 0) return;
+      flushing = true;
+      try {
+        const batch = eventBuffer.splice(0, eventBuffer.length);
+        try {
+          const result = await ingestLogs(params.workspaceId, params.sourceId, batch);
+          // If the daily limit is hit, count consecutive rejections
+          if (result.accepted === 0) {
+            streamDailyHits++;
+            if (streamDailyHits >= STREAM_MAX_DAILY_REJECTIONS) {
+              log.warn(`Stream for ${profileId}: daily limit hit ${streamDailyHits} times, stopping stream until next restart`);
+              controller.abort();
+              if (flushTimer) clearInterval(flushTimer);
+              flushTimer = null;
+              params.onEnd();
+              return;
+            }
+          } else {
+            streamDailyHits = 0;
+          }
+        } catch (err) {
+          log.error(`Stream batch ingest failed: ${err instanceof Error ? err.message : String(err)}`);
+          // Put events back at the front for retry — but only if under hard cap
+          if (eventBuffer.length + batch.length <= STREAM_HARD_CAP) {
+            eventBuffer.unshift(...batch);
+          } else {
+            log.warn(`Stream buffer overflow for ${profileId}, dropping ${batch.length} events`);
+          }
+        }
+        if (pendingState) {
+          params.onEvent(pendingState);
+          pendingState = null;
+        }
+      } finally {
+        flushing = false;
+      }
+      if (flushTimer && eventBuffer.length === 0) {
+        clearInterval(flushTimer);
+        flushTimer = null;
+      }
+    }
+
+    function scheduleFlush() {
+      if (!flushTimer) {
+        flushTimer = setInterval(() => { flushBuffer(); }, STREAM_FLUSH_INTERVAL_MS);
+      }
+      if (eventBuffer.length >= STREAM_MAX_EVENT_BUFFER) {
+        flushBuffer();
+      }
+    }
 
     async function connect() {
       const streamUrl = new URL(`https://api.nextdns.io/profiles/${profileId}/logs/stream`);
@@ -178,6 +256,8 @@ export const nextDnsConnector: IntegrationConnector = {
           reconnect();
           return;
         }
+
+        reconnectAttempts = 0;
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -198,11 +278,11 @@ export const nextDnsConnector: IntegrationConnector = {
               const data = line.slice(5).trim();
               try {
                 const event = JSON.parse(data) as NextDnsLogEvent;
-                const mapped = mapNextDnsEventToPiglogLog(event);
-                await ingestLogs(params.workspaceId, params.sourceId, [mapped]);
-                params.onEvent({ ...params.state, streamId: lastStreamId });
+                eventBuffer.push(mapNextDnsEventToPiglogLog(event));
+                pendingState = { ...params.state, streamId: lastStreamId };
+                scheduleFlush();
               } catch (err) {
-                log.error(`Failed to parse stream event: ${err instanceof Error ? err.message : String(err)}`);
+                log.debug(`Failed to parse stream event: ${err instanceof Error ? err.message : String(err)}`);
               }
             }
           }
@@ -215,7 +295,18 @@ export const nextDnsConnector: IntegrationConnector = {
     }
 
     function reconnect() {
-      const delay = 5000;
+      reconnectAttempts++;
+      if (reconnectAttempts > RECONNECT_MAX_ATTEMPTS) {
+        log.error(`Max reconnect attempts (${RECONNECT_MAX_ATTEMPTS}) reached for ${profileId}, giving up`);
+        controller.abort();
+        flushBuffer();
+        params.onEnd();
+        return;
+      }
+      const base = Math.min(RECONNECT_BASE_MS * 2 ** (reconnectAttempts - 1), RECONNECT_MAX_MS);
+      const jitter = Math.random() * base * 0.2;
+      const delay = Math.round(base + jitter);
+      log.debug(`Reconnect ${reconnectAttempts}/${RECONNECT_MAX_ATTEMPTS} in ${delay}ms`);
       setTimeout(() => {
         if (!controller.signal.aborted) connect();
       }, delay);
@@ -225,6 +316,8 @@ export const nextDnsConnector: IntegrationConnector = {
 
     return () => {
       controller.abort();
+      if (flushTimer) clearInterval(flushTimer);
+      flushBuffer();
       params.onEnd();
     };
   },

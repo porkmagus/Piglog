@@ -16,9 +16,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 async function start() {
   try {
+    const isProd = process.env.NODE_ENV === 'production';
     const server = Fastify({
       logger: {
-        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        level: process.env.LOG_LEVEL || (isProd ? 'warn' : 'debug'),
       },
       bodyLimit: 10 * 1024 * 1024, // 10MB for log ingestion
       trustProxy: true,
@@ -34,6 +35,7 @@ async function start() {
     const { alertWorker } = await import('./workers/alert.worker.js');
     const { webhookWorker } = await import('./workers/webhook.worker.js');
     const { integrationSyncWorker } = await import('./workers/integration-sync.worker.js');
+    const { startRetentionWorker } = await import('./workers/retention.worker.js');
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     const safeRedisUrl = redisUrl.includes('@') ? redisUrl.split('@')[0] + '***@...' : redisUrl;
     server.log.info({
@@ -41,11 +43,16 @@ async function start() {
       redisUrl: safeRedisUrl,
     }, 'Background workers started');
 
+    // Start retention cleanup (deletes log chunks older than RETENTION_DAYS)
+    startRetentionWorker();
+
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       server.log.info(`Received ${signal}, shutting down gracefully...`);
       const { stopAllStreams } = await import('./modules/integrations/stream.manager.js');
+      const { stopRetentionWorker } = await import('./workers/retention.worker.js');
       stopAllStreams();
+      stopRetentionWorker();
       await server.close();
       await Promise.allSettled([
         alertWorker?.close(),

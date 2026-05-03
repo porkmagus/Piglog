@@ -67,18 +67,26 @@ export default async function logRoutes(app: FastifyInstance) {
 
     const result = await ingestLogs(source.workspaceId, source.id, body.data.logs);
 
-    // Queue alert evaluation
+    // Queue alert evaluation — one deduplicated job per service, not per service+level.
+    // The alert worker already evaluates all matching rules for a service.
+    // Use a short delay so rapid-fire batches get coalesced.
     const services = new Set(body.data.logs.map((l) => l.service));
-    for (const service of services) {
-      const levels = new Set(body.data.logs.filter((l) => l.service === service).map((l) => l.level));
-      for (const level of levels) {
-        await alertEvaluatorQueue.add('evaluate-window', {
-          workspaceId: source.workspaceId,
-          service,
-          level,
-          windowMinutes: 5,
-        });
-      }
+    if (services.size > 0) {
+      await alertEvaluatorQueue.addBulk(
+        [...services].map((service) => ({
+          name: 'evaluate-window',
+          data: {
+            workspaceId: source.workspaceId,
+            service,
+            windowMinutes: 5,
+          },
+          opts: {
+            delay: 2000,
+            removeOnComplete: 100,
+            removeOnFail: 50,
+          },
+        }))
+      );
     }
 
     return reply.status(202).send(result);

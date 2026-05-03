@@ -15,6 +15,11 @@ services:
     restart: always
     networks:
       - piglog-prod
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_USER: ${DB_USER:-piglog}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -47,6 +52,7 @@ services:
     restart: always
     networks:
       - piglog-prod
+    logging: *default-logging
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_prod_data:/data
@@ -74,6 +80,7 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: piglog-migrate-prod
     restart: "no"
+    logging: *default-logging
     healthcheck:
       disable: true
     networks:
@@ -99,6 +106,7 @@ services:
     restart: always
     networks:
       - piglog-prod
+    logging: *default-logging
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -140,6 +148,7 @@ services:
     container_name: piglog-worker-prod
     restart: always
     command: ["node", "apps/api/dist/workers/index.js"]
+    logging: *default-logging
     healthcheck:
       disable: true
     networks:
@@ -178,6 +187,7 @@ services:
     restart: always
     networks:
       - piglog-prod
+    logging: *default-logging
     depends_on:
       - api
     ports:

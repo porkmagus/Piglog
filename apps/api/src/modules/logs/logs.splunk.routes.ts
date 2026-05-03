@@ -13,7 +13,7 @@ const splunkEventSchema = z.object({
   index: z.string().optional(),
 });
 
-const splunkBatchSchema = z.array(splunkEventSchema);
+const splunkBatchSchema = z.array(splunkEventSchema).max(1000);
 
 function parseSplunkTimestamp(time?: number | string): Date {
   if (typeof time === 'number') {

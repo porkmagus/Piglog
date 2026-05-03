@@ -40,7 +40,7 @@ const webhookWorker = new Worker<WebhookJobData>(
         );
       }
 
-      log.info(`Delivered to ${url} (HTTP ${response.status})`);
+      log.debug(`Delivered to ${url} (HTTP ${response.status})`);
     } catch (err) {
       clearTimeout(timeout);
       const message = err instanceof Error ? err.message : String(err);
@@ -59,7 +59,7 @@ const webhookWorker = new Worker<WebhookJobData>(
 );
 
 webhookWorker.on('completed', (job) => {
-  log.info(`Job ${job.id} completed`);
+  log.debug(`Job ${job.id} completed`);
 });
 
 webhookWorker.on('failed', (job, err) => {

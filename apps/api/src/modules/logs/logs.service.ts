@@ -3,6 +3,105 @@ import { db, logEntry, logSource, logLevelEnum } from '@piglog/db';
 import type { LogLevel } from '@piglog/db';
 import { parseQuery, type QueryClause } from '@piglog/contracts';
 import { redisConnection } from '../../queues/index.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('logs');
+
+/**
+ * Per-workspace daily ingest cap. Prevents runaway ingestion from consuming all disk.
+ * Set via WORKSPACE_DAILY_LOG_LIMIT env var (default: 2M entries/day).
+ *
+ * Uses two layers:
+ *  1. Redis (persistent across restarts) — authoritative counter
+ *  2. In-memory Map (fast path, avoids Redis round-trip for every batch)
+ *
+ * The in-memory map is periodically pruned to prevent unbounded growth.
+ */
+const DEFAULT_DAILY_LOG_LIMIT = 2_000_000;
+const WORKSPACE_DAILY_LOG_LIMIT = parseInt(process.env.WORKSPACE_DAILY_LOG_LIMIT || String(DEFAULT_DAILY_LOG_LIMIT), 10);
+const DAILY_LIMIT_REDIS_PREFIX = 'piglog:daily:';
+
+// In-memory fast-path counter (authoritative source is Redis)
+const dailyCounts = new Map<string, { date: string; count: number }>();
+
+// Throttle daily-limit warnings: at most one per workspace per minute
+const lastLimitWarn = new Map<string, number>();
+const LIMIT_WARN_THROTTLE_MS = 60_000;
+
+// Prune stale workspace entries every 10 minutes to prevent memory leak
+const pruneTimer = setInterval(() => {
+  const today = new Date().toISOString().slice(0, 10);
+  for (const [key, entry] of dailyCounts) {
+    if (entry.date !== today) {
+      dailyCounts.delete(key);
+    }
+  }
+  // Prune warn throttle map (stale after 2 minutes)
+  const now = Date.now();
+  for (const [key, ts] of lastLimitWarn) {
+    if (now - ts > 120_000) lastLimitWarn.delete(key);
+  }
+}, 10 * 60 * 1000);
+pruneTimer.unref();
+
+/**
+ * Check and increment the daily log limit for a workspace.
+ *
+ * Uses a two-phase approach:
+ *  1. Fast in-memory check (optimistic)
+ *  2. Redis INCR as the authoritative, persistent counter
+ *
+ * If the Redis count exceeds the limit, the in-memory entry is corrected.
+ * Returns `true` if the batch is allowed, `false` if the limit is exceeded.
+ */
+async function checkDailyLimit(workspaceId: string, batchSize: number): Promise<boolean> {
+  const today = new Date().toISOString().slice(0, 10);
+  const redisKey = `${DAILY_LIMIT_REDIS_PREFIX}${workspaceId}:${today}`;
+
+  // Fast path: check in-memory first
+  let entry = dailyCounts.get(workspaceId);
+  if (!entry || entry.date !== today) {
+    entry = { date: today, count: 0 };
+    dailyCounts.set(workspaceId, entry);
+  }
+
+  // Optimistic check — skip Redis round-trip if we're clearly under limit
+  if (entry.count + batchSize > WORKSPACE_DAILY_LOG_LIMIT) {
+    // Double-check against Redis (authoritative source)
+    try {
+      const redisCount = await redisConnection.get(redisKey);
+      const authoritativeCount = redisCount ? parseInt(redisCount, 10) : 0;
+      entry.count = authoritativeCount;
+      if (authoritativeCount + batchSize > WORKSPACE_DAILY_LOG_LIMIT) {
+        // Throttled warn — at most once per workspace per minute
+        const last = lastLimitWarn.get(workspaceId) || 0;
+        if (Date.now() - last > LIMIT_WARN_THROTTLE_MS) {
+          lastLimitWarn.set(workspaceId, Date.now());
+          log.warn(`Daily limit (${WORKSPACE_DAILY_LOG_LIMIT.toLocaleString()}) reached for workspace ${workspaceId}`);
+        }
+        return false;
+      }
+    } catch {
+      // Redis unavailable — deny to be safe
+      return false;
+    }
+  }
+
+  // Increment Redis counter (authoritative, persists across restarts)
+  try {
+    const newCount = await redisConnection.incrby(redisKey, batchSize);
+    // Set expiry on first write of the day (86400s = 24h)
+    if (newCount === batchSize) {
+      await redisConnection.expire(redisKey, 86400);
+    }
+    entry.count = newCount;
+  } catch {
+    // Redis unavailable — still update in-memory as degraded fallback
+    entry.count += batchSize;
+  }
+
+  return true;
+}
 
 export interface IngestLogInput {
   timestamp: string;
@@ -21,24 +120,48 @@ export async function ingestLogs(
 ) {
   if (logs.length === 0) return { accepted: 0 };
 
-  const values = logs.map((log) => ({
-    timestamp: new Date(log.timestamp),
+  // Check daily ingest cap before doing any DB work (now Redis-backed)
+  const allowed = await checkDailyLimit(workspaceId, logs.length);
+  if (!allowed) {
+    // Throttled warn — checkDailyLimit already throttles its own warning
+    // but we log a batch-level summary less frequently
+    const last = lastLimitWarn.get(`drop:${workspaceId}`) || 0;
+    if (Date.now() - last > LIMIT_WARN_THROTTLE_MS) {
+      lastLimitWarn.set(`drop:${workspaceId}`, Date.now());
+      log.warn(`Dropping ${logs.length} logs for workspace ${workspaceId} (daily limit)`);
+    }
+    return { accepted: 0 };
+  }
+
+  const values = logs.map((l) => ({
+    timestamp: new Date(l.timestamp),
     workspaceId,
     sourceId,
-    level: log.level,
-    service: log.service,
-    host: log.host || null,
-    message: log.message,
-    metadata: log.metadata || null,
-    traceId: log.traceId || null,
+    level: l.level,
+    service: l.service,
+    host: l.host || null,
+    message: l.message,
+    metadata: l.metadata || null,
+    traceId: l.traceId || null,
   }));
 
-  await db.insert(logEntry).values(values);
-
-  // Publish to Redis for live tail subscribers
-  for (const log of values) {
-    redisConnection.publish(`logs:${log.workspaceId}`, JSON.stringify(log));
+  // Insert in chunks of 500 to avoid oversized single INSERT statements
+  const CHUNK_SIZE = 500;
+  for (let i = 0; i < values.length; i += CHUNK_SIZE) {
+    await db.insert(logEntry).values(values.slice(i, i + CHUNK_SIZE));
   }
+
+  // Publish a compact notification to Redis for live tail subscribers.
+  // Do NOT send the full log payload — send a summary so SSE clients
+  // know new logs exist and can fetch them if they want.
+  const notify = JSON.stringify({
+    t: 'new',
+    ws: workspaceId,
+    src: sourceId,
+    n: values.length,
+    ts: values[values.length - 1].timestamp.toISOString(),
+  });
+  await redisConnection.publish(`logs:${workspaceId}`, notify).catch(() => {});
 
   return { accepted: values.length };
 }
@@ -60,7 +183,6 @@ export interface QueryLogsFilters {
 export async function queryLogs(filters: QueryLogsFilters) {
   const limit = Math.min(filters.limit || 500, 1000);
   const conditions: SQL[] = [sql`${logEntry.workspaceId} = ${filters.workspaceId}`];
-  const params: unknown[] = [];
 
   if (filters.sourceId) conditions.push(sql`${logEntry.sourceId} = ${filters.sourceId}`);
   if (filters.service) conditions.push(sql`${logEntry.service} = ${filters.service}`);
@@ -85,8 +207,6 @@ export async function queryLogs(filters: QueryLogsFilters) {
         conditions.push(sql`${logEntry.message} ILIKE ${`%${parsed.freeText}%`}`);
       }
     }
-  } else if (filters.search) {
-    conditions.push(sql`${logEntry.message} ILIKE ${`%${filters.search}%`}`);
   }
 
   const result = await db.execute(sql`

@@ -13,11 +13,14 @@ if (process.env.NODE_ENV !== 'production') {
 const alertWorker = (await import('./alert.worker.js')).alertWorker;
 const webhookWorker = (await import('./webhook.worker.js')).webhookWorker;
 const integrationSyncWorker = (await import('./integration-sync.worker.js')).integrationSyncWorker;
+const { startRetentionWorker, stopRetentionWorker } = await import('./retention.worker.js');
 
+startRetentionWorker();
 log.info('Workers started');
 
 const shutdown = async (signal: string) => {
   log.info(`Received ${signal}, shutting down workers...`);
+  stopRetentionWorker();
   await Promise.allSettled([
     alertWorker?.close(),
     webhookWorker?.close(),
