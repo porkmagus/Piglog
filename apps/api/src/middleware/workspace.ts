@@ -23,7 +23,7 @@ export async function extractWorkspace(request: WorkspaceRequest, reply: Fastify
     return;
   }
 
-  const userId = (request as any).user?.id;
+  const userId = request.user?.id;
   if (!userId) {
     reply.status(401).send({ error: 'Unauthorized' });
     return;

@@ -161,7 +161,9 @@ export async function ingestLogs(
     n: values.length,
     ts: values[values.length - 1].timestamp.toISOString(),
   });
-  await redisConnection.publish(`logs:${workspaceId}`, notify).catch(() => {});
+  await redisConnection.publish(`logs:${workspaceId}`, notify).catch((err) => {
+    log.warn(`Redis publish for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`);
+  });
 
   return { accepted: values.length };
 }

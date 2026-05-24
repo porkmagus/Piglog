@@ -70,7 +70,9 @@ export default async function liveLogRoutes(app: FastifyInstance) {
       cleaned = true;
       clearInterval(heartbeat);
       clearTimeout(lifetimeTimer);
-      subscriber.unsubscribe(channel).catch(() => {});
+      subscriber.unsubscribe(channel).catch((err) => {
+        console.warn(`[live-logs] Redis unsubscribe ${channel}: ${err instanceof Error ? err.message : String(err)}`);
+      });
       subscriber.disconnect();
     };
 

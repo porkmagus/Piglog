@@ -112,7 +112,9 @@ export async function startSyslogServer(options: SyslogServerOptions = {}) {
   const udpSocket = createSocket('udp4');
   udpSocket.on('message', (msg, rinfo) => {
     // Fire-and-forget — don't await in a UDP callback to avoid backpressure
-    handleSyslogMessage(msg.toString('utf-8'), rinfo.address).catch(() => {});
+    handleSyslogMessage(msg.toString('utf-8'), rinfo.address).catch((err) => {
+      log.warn(`UDP syslog ingest from ${rinfo.address}: ${err instanceof Error ? err.message : String(err)}`);
+    });
   });
   udpSocket.on('error', (err) => {
     log.error(`UDP socket error: ${err.message}`);
@@ -151,7 +153,9 @@ export async function startSyslogServer(options: SyslogServerOptions = {}) {
       for (const rawLine of lines) {
         const line = rawLine.replace(/\r$/, '');
         if (!line.trim()) continue;
-        handleSyslogMessage(line, remoteAddress).catch(() => {});
+        handleSyslogMessage(line, remoteAddress).catch((err) => {
+          log.warn(`TCP syslog ingest from ${remoteAddress}: ${err instanceof Error ? err.message : String(err)}`);
+        });
       }
     });
     socket.on('error', (err) => {

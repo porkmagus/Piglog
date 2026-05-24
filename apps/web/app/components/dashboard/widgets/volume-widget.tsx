@@ -49,7 +49,7 @@ export default function VolumeWidget({ widget, workspaceId }: Props) {
               </defs>
               <XAxis dataKey="bucket" tickFormatter={(v: string) => new Date(v).toLocaleTimeString([], { hour: '2-digit' })} stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
               <YAxis stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} labelFormatter={(v: string) => new Date(v).toLocaleString()} formatter={(value: number) => [`${value.toLocaleString()} logs`, 'Count']} />
+              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} labelFormatter={(v: unknown) => new Date(v as string).toLocaleString()} formatter={(value: unknown) => [`${(value as number).toLocaleString()} logs`, 'Count']} />
               <Area type="monotone" dataKey="count" stroke="#F09040" fill={`url(#volGrad-${widget.id})`} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>

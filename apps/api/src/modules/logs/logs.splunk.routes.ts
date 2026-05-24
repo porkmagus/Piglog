@@ -32,7 +32,7 @@ function parseSplunkTimestamp(time?: number | string): Date {
 function normalizeLevel(level: unknown): typeof logLevelEnum.enumValues[number] {
   if (typeof level !== 'string') return 'INFO';
   const upper = level.toUpperCase();
-  if (logLevelEnum.enumValues.includes(upper as any)) {
+  if ((logLevelEnum.enumValues as readonly string[]).includes(upper)) {
     return upper as typeof logLevelEnum.enumValues[number];
   }
   // Common mappings

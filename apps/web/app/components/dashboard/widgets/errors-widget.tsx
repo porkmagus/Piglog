@@ -36,7 +36,7 @@ export default function ErrorsWidget({ widget, workspaceId }: { widget: Dashboar
             <LineChart data={data}>
               <XAxis dataKey="bucket" tickFormatter={(v: string) => new Date(v).toLocaleTimeString([], { hour: '2-digit' })} stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
               <YAxis stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} labelFormatter={(v: string) => new Date(v).toLocaleString()} />
+              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} labelFormatter={(v: unknown) => new Date(v as string).toLocaleString()} />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
               <Line type="monotone" dataKey="total" stroke="#F09040" strokeWidth={2} dot={false} name="Total" />
               <Line type="monotone" dataKey="errors" stroke="#f87171" strokeWidth={2} dot={false} name="Errors" />

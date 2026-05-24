@@ -118,10 +118,14 @@ export function startStream(integrationId: string): void {
         streamState.eventCount++;
 
         if (streamState.eventCount >= STREAM_ID_BATCH_COUNT) {
-          flushStreamState(integrationId).catch(() => {});
+          flushStreamState(integrationId).catch((err) => {
+            log.warn(`Batch flush for integration ${integrationId}: ${err instanceof Error ? err.message : String(err)}`);
+          });
         } else if (!streamState.batchTimer) {
           streamState.batchTimer = setTimeout(() => {
-            flushStreamState(integrationId).catch(() => {});
+            flushStreamState(integrationId).catch((err) => {
+              log.warn(`Timer flush for integration ${integrationId}: ${err instanceof Error ? err.message : String(err)}`);
+            });
           }, STREAM_ID_BATCH_INTERVAL_MS);
         }
       },
@@ -144,7 +148,9 @@ export function stopStream(integrationId: string): void {
   if (entry) {
     entry.stream.stop();
     activeStreams.delete(integrationId);
-    flushStreamState(integrationId).catch(() => {});
+    flushStreamState(integrationId).catch((err) => {
+      log.warn(`Stop-stream flush for integration ${integrationId}: ${err instanceof Error ? err.message : String(err)}`);
+    });
   }
 }
 

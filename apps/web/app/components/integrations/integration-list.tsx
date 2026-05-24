@@ -149,7 +149,9 @@ export function IntegrationList({ refreshKey = 0 }: { refreshKey?: number }) {
                 const isDisabled = int.status === 'DISABLED';
                 const isActionPending = pendingAction === int.id;
                 const isRevealed = revealedSecrets.has(int.id);
-                const apiKey = int.config?.secrets?.apiKey as string | undefined;
+                const apiKey = (int.config as Record<string, unknown> | null)?.secrets
+                  ? ((int.config as Record<string, unknown>).secrets as Record<string, unknown>)?.apiKey as string | undefined
+                  : undefined;
                 const isDeleteConfirming = deleteConfirmId === int.id;
                 const isExpanded = expandedIntegrations.has(int.id);
                 const hasSources = int.sources && int.sources.length > 0;

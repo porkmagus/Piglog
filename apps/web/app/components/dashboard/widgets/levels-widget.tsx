@@ -40,7 +40,7 @@ export default function LevelsWidget({ widget, workspaceId }: { widget: Dashboar
             <BarChart data={data}>
               <XAxis dataKey="level" stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
               <YAxis stroke="#2A2A2A" tick={{ fill: '#8A8F98', fontSize: 11 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} formatter={(value: number) => [`${value.toLocaleString()} logs`, 'Count']} />
+              <Tooltip contentStyle={{ backgroundColor: '#151515', border: '1px solid #2A2A2A', borderRadius: '6px', fontSize: '12px' }} formatter={(value: unknown) => [`${(value as number).toLocaleString()} logs`, 'Count']} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {data.map((entry) => (<Cell key={entry.level} fill={LEVEL_COLORS[entry.level] || '#8A8F98'} />))}
               </Bar>
